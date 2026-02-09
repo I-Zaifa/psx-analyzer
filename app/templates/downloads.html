@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}PSX Analyzer - Downloads & Methodology{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Downloads &amp; Methodology
+    </h1>
+    <p class="page-subtitle">Data files, source code, and documentation on how everything was computed{% if data_range %} &middot; {{ data_range }}{% endif %}</p>
+</div>
+
+<!-- ── About & Methodology ────────────────────────────────────────────────── -->
+<div class="card mb-4">
+    <div class="section-title" style="margin-bottom:0.75rem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        About This Project
+    </div>
+    <p class="text-sm" style="margin-bottom:0.75rem">
+        PSX Analyzer is a quantitative analysis tool for the Pakistan Stock Exchange. It fetches daily price and volume data for every listed equity, computes standard financial metrics, and presents the results in an interactive dashboard. The entire pipeline &mdash; data collection, computation, and visualization &mdash; is written in Python and runs locally before being exported as a static site.
+    </p>
+
+    <div class="section-title" style="margin-bottom:0.75rem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Data Sources
+    </div>
+    <table class="methodology-table">
+        <thead>
+            <tr><th>Data</th><th>Primary Source</th><th>Fallback</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Company listings &amp; sectors</td><td>PSX Data Portal (<code>dps.psx.com.pk</code>)</td><td>psx-data-reader library</td></tr>
+            <tr><td>Daily close &amp; volume</td><td>PSX <code>/timeseries/eod/{SYMBOL}</code></td><td>&mdash;</td></tr>
+            <tr><td>KSE-100 Index</td><td>PSX <code>/timeseries/eod/KSE100</code> (2021&ndash;present)</td><td>Yahoo Finance <code>^KSE</code> (2010&ndash;2021)</td></tr>
+            <tr><td>USD/PKR exchange rate</td><td>Yahoo Finance (<code>USDPKR=X</code>)</td><td>Bundled CSV</td></tr>
+            <tr><td>CPI / Inflation</td><td>World Bank API (<code>FP.CPI.TOTL.ZG</code>)</td><td>FRED &rarr; Bundled CSV</td></tr>
+            <tr><td>SBP Policy Rate</td><td>FRED (<code>INTDSRPKM193N</code>)</td><td>Bundled CSV</td></tr>
+            <tr><td>Fundamentals (P/E, EPS, etc.)</td><td>PSX Data Portal company pages</td><td>&mdash;</td></tr>
+        </tbody>
+    </table>
+
+    <div class="section-title" style="margin-top:1rem; margin-bottom:0.75rem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Metric Definitions
+    </div>
+    <table class="methodology-table">
+        <thead>
+            <tr><th>Metric</th><th>Definition</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>Total Return</strong></td><td>(Last Close &minus; First Close) / First Close</td></tr>
+            <tr><td><strong>CAGR</strong></td><td>Compound Annual Growth Rate: (Last/First)^(1/years) &minus; 1</td></tr>
+            <tr><td><strong>Volatility</strong></td><td>Std. deviation of daily log returns, annualized (&times; &radic;245 trading days)</td></tr>
+            <tr><td><strong>Max Drawdown</strong></td><td>Largest peak-to-trough decline over the full history</td></tr>
+            <tr><td><strong>Sharpe Ratio</strong></td><td>(CAGR &minus; risk-free rate) / Volatility. Risk-free rate = avg SBP policy rate</td></tr>
+            <tr><td><strong>Beta</strong></td><td>Cov(stock, KSE-100) / Var(KSE-100), computed from daily log returns</td></tr>
+            <tr><td><strong>Correlation</strong></td><td>Pearson correlation of daily log returns vs KSE-100</td></tr>
+            <tr><td><strong>Real CAGR</strong></td><td>CAGR minus average annual CPI inflation</td></tr>
+            <tr><td><strong>Volume Trend</strong></td><td>30-day avg volume / 90-day avg volume (above 1 = rising)</td></tr>
+        </tbody>
+    </table>
+
+    <div class="section-title" style="margin-top:1rem; margin-bottom:0.75rem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Disclosure &amp; Limitations
+    </div>
+    <ul class="methodology-list">
+        <li>This is a <strong>research and educational tool</strong>, not financial advice. Do not make investment decisions based solely on this data.</li>
+        <li>Price data comes from PSX&rsquo;s public data portal. It may contain gaps, errors, or delays. Corporate actions (splits, bonuses) are <strong>not adjusted</strong>.</li>
+        <li>Only close price and volume are available from the timeseries endpoint; open/high/low are not provided for most stocks.</li>
+        <li>Fundamentals (P/E, EPS, etc.) are scraped from PSX company pages and may be stale or missing for many symbols.</li>
+        <li>Beta and correlation are computed against the KSE-100 index. Dates are normalized to midnight for alignment between sources.</li>
+        <li>The risk-free rate used for Sharpe ratio is the average SBP policy rate over the data period (~10%).</li>
+        <li>Macro data (CPI, T-bill) has triple fallback: live API, secondary API, bundled CSV. If all live sources fail, bundled data ships with the project.</li>
+        <li>All code is open and available for download below. Verify any result independently before relying on it.</li>
+    </ul>
+</div>
+
+<!-- ── CSV Data Files ─────────────────────────────────────────────────────── -->
+{% if files %}
+<div class="section-title">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    CSV Data Files
+</div>
+
+<div class="download-grid">
+    {% for f in files %}
+    <a href="/download/{{ f.path }}" class="download-card">
+        <div class="download-icon">
+            {% if f.type == 'master' %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            {% elif f.type == 'sectors' %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            {% else %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+            {% endif %}
+        </div>
+        <div class="download-info">
+            <h3>{{ f.name }}</h3>
+            <p>{{ (f.size / 1024)|round(1) }} KB
+                {% if f.type == 'master' %} &mdash; 606 companies, 26 columns of summary metrics
+                {% elif f.type == 'sectors' %} &mdash; 37 sectors with aggregate statistics
+                {% elif 'kse100' in f.name %} &mdash; KSE-100 daily close (2010&ndash;2026)
+                {% elif 'usdpkr' in f.name %} &mdash; USD/PKR daily rate (2010&ndash;2026)
+                {% elif 'cpi' in f.name %} &mdash; Annual CPI inflation (World Bank)
+                {% elif 'tbill' in f.name %} &mdash; SBP policy rate history
+                {% endif %}
+            </p>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+{% endif %}
+
+<!-- ── Source Code ─────────────────────────────────────────────────────────── -->
+{% if source_files %}
+<div class="section-title mt-4">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    Source Code (Python)
+</div>
+<p class="text-muted text-sm mb-2">The full pipeline and application code. Read these to understand exactly how every number was computed.</p>
+
+<div class="download-grid">
+    {% for f in source_files %}
+    <a href="/download/{{ f.path }}" class="download-card">
+        <div class="download-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </div>
+        <div class="download-info">
+            <h3>{{ f.name }}</h3>
+            <p>{{ (f.size / 1024)|round(1) }} KB &mdash; {{ f.desc }}</p>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if not files and not source_files %}
+<div class="empty-state">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <h3>No Files Available</h3>
+    <p>Run the data pipeline first to generate output files.</p>
+</div>
+{% endif %}
+{% endblock %}

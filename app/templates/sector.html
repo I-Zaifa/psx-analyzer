@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}PSX Analyzer - Sectors{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Sector Analysis
+    </h1>
+    <p class="page-subtitle">Performance aggregates and relative strength by industry sector{% if data_range %} · {{ data_range }}{% endif %}</p>
+</div>
+
+{% if treemap %}
+<div class="chart-container mb-4">
+    <div id="treemapChart"></div>
+</div>
+{% endif %}
+
+{% if sectors is not none and sectors|length > 0 %}
+<div class="table-container">
+    <div class="table-header">
+        <div class="table-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M7 12h10M10 18h4"/></svg>
+            Sector Summary ({{ sectors|length }} sectors)
+        </div>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Sector</th>
+                    <th>Companies</th>
+                    <th>Avg Return</th>
+                    <th>Avg CAGR</th>
+                    <th>Avg Volatility</th>
+                    <th>Avg Sharpe</th>
+                    <th>Avg Beta</th>
+                    <th>Avg Max DD</th>
+                    <th>Best</th>
+                    <th>Worst</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for _, row in sectors.iterrows() %}
+                <tr>
+                    <td class="font-bold">{{ row.get('sector', 'N/A') }}</td>
+                    <td class="cell-mono">{{ row.get('num_companies', 'N/A') }}</td>
+                    <td class="cell-mono {% if row.get('avg_total_return') is not none and row.avg_total_return == row.avg_total_return %}{% if row.avg_total_return > 0 %}cell-positive{% elif row.avg_total_return < 0 %}cell-negative{% endif %}{% endif %}">
+                        {{ fmt_pct(row.get('avg_total_return')) }}
+                    </td>
+                    <td class="cell-mono {% if row.get('avg_cagr') is not none and row.avg_cagr == row.avg_cagr %}{% if row.avg_cagr > 0 %}cell-positive{% elif row.avg_cagr < 0 %}cell-negative{% endif %}{% endif %}">
+                        {{ fmt_pct(row.get('avg_cagr')) }}
+                    </td>
+                    <td class="cell-mono">{{ fmt_pct(row.get('avg_volatility')) }}</td>
+                    <td class="cell-mono">{{ fmt_num(row.get('avg_sharpe')) }}</td>
+                    <td class="cell-mono">{{ fmt_num(row.get('avg_beta')) }}</td>
+                    <td class="cell-mono cell-negative">{{ fmt_pct(row.get('avg_max_drawdown')) }}</td>
+                    <td>
+                        {% if row.get('best_performer') %}
+                        <a href="/stock/{{ row.best_performer }}" class="cell-symbol">{{ row.best_performer }}</a>
+                        {% else %}N/A{% endif %}
+                    </td>
+                    <td>
+                        {% if row.get('worst_performer') %}
+                        <a href="/stock/{{ row.worst_performer }}" class="cell-symbol">{{ row.worst_performer }}</a>
+                        {% else %}N/A{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <h3>No Sector Data</h3>
+    <p>Run the pipeline to generate sector analysis data.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if treemap %}
+    var treemapData = {{ treemap|safe }};
+    Plotly.newPlot('treemapChart', treemapData.data, treemapData.layout, {responsive: true, displayModeBar: false});
+{% endif %}
+</script>
+{% endblock %}

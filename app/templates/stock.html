@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}PSX Analyzer - {{ symbol }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        {{ symbol }}
+        {% if info.get('sector') and info.sector == info.sector %}
+        <span class="badge badge-teal">{{ info.sector }}</span>
+        {% endif %}
+    </h1>
+    {% if info.get('company') or info.get('name') or info.get('company_name') %}
+    <p class="page-subtitle">{{ info.get('company') or info.get('name') or info.get('company_name', '') }}</p>
+    {% endif %}
+</div>
+
+{% if has_data %}
+<!-- Key Metrics -->
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-label">Last Close</div>
+        <div class="metric-value teal">{{ fmt_num(info.get('last_close')) }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Total Return</div>
+        <div class="metric-value {% if info.get('total_return') is not none %}{% if info.total_return > 0 %}positive{% elif info.total_return < 0 %}negative{% endif %}{% endif %}">
+            {{ fmt_pct(info.get('total_return')) }}
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">CAGR</div>
+        <div class="metric-value {% if info.get('cagr') is not none %}{% if info.cagr > 0 %}positive{% elif info.cagr < 0 %}negative{% endif %}{% endif %}">
+            {{ fmt_pct(info.get('cagr')) }}
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Volatility</div>
+        <div class="metric-value teal">{{ fmt_pct(info.get('annualized_volatility')) }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Max Drawdown</div>
+        <div class="metric-value negative">{{ fmt_pct(info.get('max_drawdown')) }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Sharpe Ratio</div>
+        <div class="metric-value teal">{{ fmt_num(info.get('sharpe_ratio')) }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Beta</div>
+        <div class="metric-value teal">{{ fmt_num(info.get('beta')) }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Correlation</div>
+        <div class="metric-value teal">{{ fmt_num(info.get('correlation')) }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">52W High</div>
+        <div class="metric-value teal">{{ fmt_num(info.get('52w_high')) }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">52W Low</div>
+        <div class="metric-value teal">{{ fmt_num(info.get('52w_low')) }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Volume Trend</div>
+        <div class="metric-value {% if info.get('volume_trend') is not none %}{% if info.volume_trend > 1 %}positive{% elif info.volume_trend < 1 %}negative{% endif %}{% endif %}">
+            {{ fmt_num(info.get('volume_trend')) }}x
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Real CAGR</div>
+        <div class="metric-value {% if info.get('real_cagr') is not none %}{% if info.real_cagr > 0 %}positive{% elif info.real_cagr < 0 %}negative{% endif %}{% endif %}">
+            {{ fmt_pct(info.get('real_cagr')) }}
+        </div>
+    </div>
+</div>
+
+<!-- Period Returns -->
+<div class="section-title">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+    Period Returns
+</div>
+<div class="metrics-grid mb-4">
+    <div class="metric-card">
+        <div class="metric-label">YTD</div>
+        <div class="metric-value {% if info.get('return_ytd') is not none %}{% if info.return_ytd > 0 %}positive{% elif info.return_ytd < 0 %}negative{% endif %}{% endif %}">
+            {{ fmt_pct(info.get('return_ytd')) }}
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">1 Month</div>
+        <div class="metric-value {% if info.get('return_1m') is not none %}{% if info.return_1m > 0 %}positive{% elif info.return_1m < 0 %}negative{% endif %}{% endif %}">
+            {{ fmt_pct(info.get('return_1m')) }}
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">3 Months</div>
+        <div class="metric-value {% if info.get('return_3m') is not none %}{% if info.return_3m > 0 %}positive{% elif info.return_3m < 0 %}negative{% endif %}{% endif %}">
+            {{ fmt_pct(info.get('return_3m')) }}
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">6 Months</div>
+        <div class="metric-value {% if info.get('return_6m') is not none %}{% if info.return_6m > 0 %}positive{% elif info.return_6m < 0 %}negative{% endif %}{% endif %}">
+            {{ fmt_pct(info.get('return_6m')) }}
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">1 Year</div>
+        <div class="metric-value {% if info.get('return_1y') is not none %}{% if info.return_1y > 0 %}positive{% elif info.return_1y < 0 %}negative{% endif %}{% endif %}">
+            {{ fmt_pct(info.get('return_1y')) }}
+        </div>
+    </div>
+</div>
+
+<!-- Fundamentals (if available) -->
+{% if info.get('pe_ratio') is not none or info.get('pb_ratio') is not none or info.get('dividend_yield') is not none or info.get('eps') is not none %}
+<div class="section-title">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    Fundamentals
+</div>
+<div class="metrics-grid mb-4">
+    {% if info.get('pe_ratio') is not none %}
+    <div class="metric-card">
+        <div class="metric-label">P/E Ratio</div>
+        <div class="metric-value teal">{{ fmt_num(info.pe_ratio) }}</div>
+    </div>
+    {% endif %}
+    {% if info.get('pb_ratio') is not none %}
+    <div class="metric-card">
+        <div class="metric-label">P/B Ratio</div>
+        <div class="metric-value teal">{{ fmt_num(info.pb_ratio) }}</div>
+    </div>
+    {% endif %}
+    {% if info.get('dividend_yield') is not none %}
+    <div class="metric-card">
+        <div class="metric-label">Dividend Yield</div>
+        <div class="metric-value positive">{{ fmt_num(info.dividend_yield) }}%</div>
+    </div>
+    {% endif %}
+    {% if info.get('eps') is not none %}
+    <div class="metric-card">
+        <div class="metric-label">EPS</div>
+        <div class="metric-value teal">{{ fmt_num(info.eps) }}</div>
+    </div>
+    {% endif %}
+    {% if info.get('market_cap') is not none %}
+    <div class="metric-card">
+        <div class="metric-label">Market Cap</div>
+        <div class="metric-value teal">{{ fmt_num(info.market_cap) }}</div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Charts -->
+<div class="section-title">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+    Charts
+</div>
+
+{% if price_chart %}
+<div class="chart-container">
+    <div id="priceChart"></div>
+</div>
+{% endif %}
+
+<div class="chart-grid">
+    {% if returns_chart %}
+    <div class="chart-container">
+        <div id="returnsChart"></div>
+    </div>
+    {% endif %}
+    {% if drawdown_chart %}
+    <div class="chart-container">
+        <div id="drawdownChart"></div>
+    </div>
+    {% endif %}
+</div>
+
+{% if volume_chart %}
+<div class="chart-container">
+    <div id="volumeChart"></div>
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div class="flex gap-3 mt-4">
+    <a href="/download/symbol/{{ symbol }}" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV
+    </a>
+    <a href="/compare?s={{ symbol }}" class="btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Compare
+    </a>
+</div>
+
+{% else %}
+<div class="empty-state">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <h3>No Data Available</h3>
+    <p>Historical data for {{ symbol }} is not available. It may be delisted or data fetch failed.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if price_chart %}
+    var priceData = {{ price_chart|safe }};
+    Plotly.newPlot('priceChart', priceData.data, priceData.layout, {responsive: true, displayModeBar: false});
+{% endif %}
+{% if returns_chart %}
+    var returnsData = {{ returns_chart|safe }};
+    Plotly.newPlot('returnsChart', returnsData.data, returnsData.layout, {responsive: true, displayModeBar: false});
+{% endif %}
+{% if drawdown_chart %}
+    var ddData = {{ drawdown_chart|safe }};
+    Plotly.newPlot('drawdownChart', ddData.data, ddData.layout, {responsive: true, displayModeBar: false});
+{% endif %}
+{% if volume_chart %}
+    var volData = {{ volume_chart|safe }};
+    Plotly.newPlot('volumeChart', volData.data, volData.layout, {responsive: true, displayModeBar: false});
+{% endif %}
+</script>
+{% endblock %}

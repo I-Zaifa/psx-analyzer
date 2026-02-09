@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}PSX Analyzer - Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+        Market Dashboard
+    </h1>
+    <p class="page-subtitle">Pakistan Stock Exchange — {{ stats.total_companies|default(0) }} companies across {{ stats.total_sectors|default(0) }} sectors{% if data_range %} · {{ data_range }}{% endif %}</p>
+</div>
+
+{% if stats %}
+<!-- Key Stats -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Listed Companies</div>
+        <div class="stat-value accent">{{ stats.total_companies }}</div>
+        <div class="stat-sub">{{ stats.total_sectors }} sectors</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Market Breadth</div>
+        <div class="stat-value positive">{{ stats.positive_count }}</div>
+        <div class="stat-sub"><span class="cell-positive">{{ stats.positive_count }} gainers</span> · <span class="cell-negative">{{ stats.negative_count }} losers</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Median Return</div>
+        <div class="stat-value {% if stats.median_return and stats.median_return > 0 %}positive{% elif stats.median_return and stats.median_return < 0 %}negative{% else %}accent{% endif %}">
+            {{ fmt_pct(stats.median_return) }}
+        </div>
+        <div class="stat-sub">All-time median</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Avg CAGR</div>
+        <div class="stat-value {% if stats.avg_cagr and stats.avg_cagr > 0 %}positive{% elif stats.avg_cagr and stats.avg_cagr < 0 %}negative{% else %}accent{% endif %}">
+            {{ fmt_pct(stats.avg_cagr) }}
+        </div>
+        <div class="stat-sub">Compound annual growth</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Avg Volatility</div>
+        <div class="stat-value accent">{{ fmt_pct(stats.avg_volatility) }}</div>
+        <div class="stat-sub">Annualized</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Avg Sharpe</div>
+        <div class="stat-value accent">{{ fmt_num(stats.avg_sharpe) }}</div>
+        <div class="stat-sub">Risk-adjusted</div>
+    </div>
+</div>
+
+<!-- Market Charts: KSE-100 and USD/PKR -->
+<div class="chart-grid">
+    {% if kse_chart %}
+    <div class="chart-container"><div id="kse100Chart"></div></div>
+    {% endif %}
+    {% if usdpkr_chart %}
+    <div class="chart-container"><div id="usdpkrChart"></div></div>
+    {% endif %}
+</div>
+
+<!-- Return Distribution -->
+{% if dist_chart %}
+<div class="chart-container"><div id="distChart"></div></div>
+{% endif %}
+
+<!-- Macro: CPI and T-bill -->
+<div class="chart-grid">
+    {% if cpi_chart %}
+    <div class="chart-container"><div id="cpiChart"></div></div>
+    {% endif %}
+    {% if tbill_chart %}
+    <div class="chart-container"><div id="tbillChart"></div></div>
+    {% endif %}
+</div>
+
+<!-- Top Movers: 1-Year -->
+{% if stats.top_gainers_1y or stats.top_losers_1y %}
+<div class="two-col-grid">
+    {% if stats.top_gainers_1y %}
+    <div class="list-card">
+        <div class="list-card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            Top Gainers (1-Year)
+        </div>
+        {% for item in stats.top_gainers_1y %}
+        <div class="list-item">
+            <div>
+                <a href="/stock/{{ item.symbol }}" class="list-item-symbol">{{ item.symbol }}</a>
+                <span class="text-xs text-muted">{{ item.sector[:25] if item.sector and item.sector == item.sector else '' }}</span>
+            </div>
+            <span class="list-item-value cell-positive">{{ fmt_pct(item.return_1y) }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% if stats.top_losers_1y %}
+    <div class="list-card">
+        <div class="list-card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+            Top Losers (1-Year)
+        </div>
+        {% for item in stats.top_losers_1y %}
+        <div class="list-item">
+            <div>
+                <a href="/stock/{{ item.symbol }}" class="list-item-symbol">{{ item.symbol }}</a>
+                <span class="text-xs text-muted">{{ item.sector[:25] if item.sector and item.sector == item.sector else '' }}</span>
+            </div>
+            <span class="list-item-value cell-negative">{{ fmt_pct(item.return_1y) }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Sector Performance Bar Chart -->
+{% if sector_perf_chart %}
+<div class="chart-container"><div id="sectorPerfChart"></div></div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <h3>No Data Available Yet</h3>
+    <p>Run the data pipeline first: <code>python run.py --pipeline</code></p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+var plotCfg = {responsive: true, displayModeBar: false};
+{% if kse_chart %}
+var d = {{ kse_chart|safe }};
+Plotly.newPlot('kse100Chart', d.data, d.layout, plotCfg);
+{% endif %}
+{% if usdpkr_chart %}
+var d2 = {{ usdpkr_chart|safe }};
+Plotly.newPlot('usdpkrChart', d2.data, d2.layout, plotCfg);
+{% endif %}
+{% if dist_chart %}
+var d3 = {{ dist_chart|safe }};
+Plotly.newPlot('distChart', d3.data, d3.layout, plotCfg);
+{% endif %}
+{% if cpi_chart %}
+var d4 = {{ cpi_chart|safe }};
+Plotly.newPlot('cpiChart', d4.data, d4.layout, plotCfg);
+{% endif %}
+{% if tbill_chart %}
+var d5 = {{ tbill_chart|safe }};
+Plotly.newPlot('tbillChart', d5.data, d5.layout, plotCfg);
+{% endif %}
+{% if sector_perf_chart %}
+var d6 = {{ sector_perf_chart|safe }};
+Plotly.newPlot('sectorPerfChart', d6.data, d6.layout, plotCfg);
+{% endif %}
+</script>
+{% endblock %}

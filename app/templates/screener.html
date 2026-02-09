@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}PSX Analyzer - Stock Screener{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Stock Screener
+    </h1>
+    <p class="page-subtitle">Search, filter, and sort all listed companies by any metric{% if data_as_of %} · Data as of {{ data_as_of }}{% endif %}</p>
+</div>
+
+<div class="table-container">
+    <div class="table-header">
+        <div class="table-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M7 12h10M10 18h4"/></svg>
+            <span id="resultCount">{{ data|length }} companies</span>
+        </div>
+        <div class="table-controls">
+            <input type="search" class="search-input" id="searchInput" placeholder="Search symbol, company, sector...">
+            <select id="sectorFilter">
+                <option value="all">All Sectors</option>
+                {% for s in sectors %}
+                <option value="{{ s }}">{{ s }}</option>
+                {% endfor %}
+            </select>
+            <select id="sortBy">
+                <option value="symbol">Sort by Symbol</option>
+                <option value="total_return">Sort by Total Return</option>
+                <option value="cagr">Sort by CAGR</option>
+                <option value="sharpe_ratio">Sort by Sharpe</option>
+                <option value="annualized_volatility">Sort by Volatility</option>
+                <option value="max_drawdown">Sort by Max Drawdown</option>
+                <option value="beta">Sort by Beta</option>
+                <option value="return_ytd">Sort by YTD Return</option>
+                <option value="avg_daily_volume">Sort by Volume</option>
+            </select>
+        </div>
+    </div>
+    <div class="table-wrapper">
+        <table id="screenerTable">
+            <thead>
+                <tr>
+                    <th data-col="symbol">Symbol</th>
+                    <th data-col="sector">Sector</th>
+                    <th data-col="last_close">Last Close</th>
+                    <th data-col="total_return">Total Return</th>
+                    <th data-col="cagr">CAGR</th>
+                    <th data-col="annualized_volatility">Volatility</th>
+                    <th data-col="max_drawdown">Max DD</th>
+                    <th data-col="sharpe_ratio">Sharpe</th>
+                    <th data-col="beta">Beta</th>
+                    <th data-col="return_ytd">YTD</th>
+                    <th data-col="return_1m">1M</th>
+                    <th data-col="return_3m">3M</th>
+                    <th data-col="return_1y">1Y</th>
+                    <th data-col="avg_daily_volume">Avg Volume</th>
+                    <th data-col="pe_ratio">P/E</th>
+                    <th data-col="dividend_yield">Div Yield</th>
+                </tr>
+            </thead>
+            <tbody id="screenerBody">
+                {% if data is not none and data|length > 0 %}
+                {% for _, row in data.iterrows() %}
+                <tr>
+                    <td><a href="/stock/{{ row.symbol }}" class="cell-symbol">{{ row.symbol }}</a></td>
+                    <td class="cell-muted text-xs">{{ row.get('sector', 'N/A') if row.get('sector') and row.get('sector') == row.get('sector') else 'N/A' }}</td>
+                    <td class="cell-mono">{{ fmt_num(row.get('last_close')) }}</td>
+                    <td class="cell-mono {% if row.get('total_return') and row.total_return == row.total_return %}{% if row.total_return > 0 %}cell-positive{% elif row.total_return < 0 %}cell-negative{% endif %}{% endif %}">{{ fmt_pct(row.get('total_return')) }}</td>
+                    <td class="cell-mono {% if row.get('cagr') and row.cagr == row.cagr %}{% if row.cagr > 0 %}cell-positive{% elif row.cagr < 0 %}cell-negative{% endif %}{% endif %}">{{ fmt_pct(row.get('cagr')) }}</td>
+                    <td class="cell-mono">{{ fmt_pct(row.get('annualized_volatility')) }}</td>
+                    <td class="cell-mono cell-negative">{{ fmt_pct(row.get('max_drawdown')) }}</td>
+                    <td class="cell-mono">{{ fmt_num(row.get('sharpe_ratio')) }}</td>
+                    <td class="cell-mono">{{ fmt_num(row.get('beta')) }}</td>
+                    <td class="cell-mono {% if row.get('return_ytd') and row.return_ytd == row.return_ytd %}{% if row.return_ytd > 0 %}cell-positive{% elif row.return_ytd < 0 %}cell-negative{% endif %}{% endif %}">{{ fmt_pct(row.get('return_ytd')) }}</td>
+                    <td class="cell-mono {% if row.get('return_1m') and row.return_1m == row.return_1m %}{% if row.return_1m > 0 %}cell-positive{% elif row.return_1m < 0 %}cell-negative{% endif %}{% endif %}">{{ fmt_pct(row.get('return_1m')) }}</td>
+                    <td class="cell-mono {% if row.get('return_3m') and row.return_3m == row.return_3m %}{% if row.return_3m > 0 %}cell-positive{% elif row.return_3m < 0 %}cell-negative{% endif %}{% endif %}">{{ fmt_pct(row.get('return_3m')) }}</td>
+                    <td class="cell-mono {% if row.get('return_1y') and row.return_1y == row.return_1y %}{% if row.return_1y > 0 %}cell-positive{% elif row.return_1y < 0 %}cell-negative{% endif %}{% endif %}">{{ fmt_pct(row.get('return_1y')) }}</td>
+                    <td class="cell-mono">{{ fmt_num(row.get('avg_daily_volume'), 0) }}</td>
+                    <td class="cell-mono">{{ fmt_num(row.get('pe_ratio')) }}</td>
+                    <td class="cell-mono">{{ fmt_pct(row.get('dividend_yield', None)) if row.get('dividend_yield') and row.get('dividend_yield') == row.get('dividend_yield') else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('screenerTable');
+    const tbody = document.getElementById('screenerBody');
+    const searchInput = document.getElementById('searchInput');
+    const sectorFilter = document.getElementById('sectorFilter');
+    const sortBy = document.getElementById('sortBy');
+    const resultCount = document.getElementById('resultCount');
+
+    function filterTable() {
+        const search = searchInput.value.toUpperCase();
+        const sector = sectorFilter.value;
+        const rows = tbody.querySelectorAll('tr');
+        let visible = 0;
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            const symbol = cells[0]?.textContent?.toUpperCase() || '';
+            const sectorCell = cells[1]?.textContent?.toUpperCase() || '';
+            const matchSearch = !search || symbol.includes(search) || sectorCell.includes(search);
+            const matchSector = sector === 'all' || cells[1]?.textContent?.trim() === sector;
+
+            if (matchSearch && matchSector) {
+                row.style.display = '';
+                visible++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        resultCount.textContent = visible + ' companies';
+    }
+
+    searchInput.addEventListener('input', filterTable);
+    sectorFilter.addEventListener('change', filterTable);
+
+    // Column sorting
+    const headers = table.querySelectorAll('thead th');
+    let currentSort = { col: null, asc: true };
+
+    headers.forEach(th => {
+        th.addEventListener('click', function() {
+            const col = this.dataset.col;
+            const colIdx = Array.from(headers).indexOf(this);
+            const asc = currentSort.col === col ? !currentSort.asc : false;
+            currentSort = { col, asc };
+
+            headers.forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
+            this.classList.add(asc ? 'sorted-asc' : 'sorted-desc');
+
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort((a, b) => {
+                let aVal = a.cells[colIdx]?.textContent?.trim() || '';
+                let bVal = b.cells[colIdx]?.textContent?.trim() || '';
+
+                // Try numeric comparison
+                const aNum = parseFloat(aVal.replace(/[%,BMKN\/A]/g, ''));
+                const bNum = parseFloat(bVal.replace(/[%,BMKN\/A]/g, ''));
+
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return asc ? aNum - bNum : bNum - aNum;
+                }
+                // Handle N/A
+                if (aVal === 'N/A') return 1;
+                if (bVal === 'N/A') return -1;
+
+                return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    });
+
+    // Sort dropdown
+    sortBy.addEventListener('change', function() {
+        const col = this.value;
+        const th = table.querySelector(`th[data-col="${col}"]`);
+        if (th) th.click();
+    });
+});
+</script>
+{% endblock %}

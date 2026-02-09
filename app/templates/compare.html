@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% block title %}PSX Analyzer - Compare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Compare Stocks
+    </h1>
+    <p class="page-subtitle">Side-by-side comparison of up to 5 stocks{% if data_as_of %} · Data as of {{ data_as_of }}{% endif %}</p>
+</div>
+
+<!-- Selector -->
+<form method="GET" action="/compare" class="compare-selector">
+    <select id="addSymbol" name="addSymbol" style="min-width: 200px;">
+        <option value="">Add a stock...</option>
+        {% for s in symbols %}
+        <option value="{{ s }}">{{ s }}</option>
+        {% endfor %}
+    </select>
+    <button type="button" class="btn btn-primary" id="addBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add
+    </button>
+    <div class="compare-chips" id="chipContainer">
+        {% for s in selected %}
+        <div class="chip">
+            {{ s }}
+            <button type="button" class="chip-remove" data-symbol="{{ s }}">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    <input type="hidden" name="s" id="symbolsInput" value="{{ selected|join(',') }}">
+</form>
+
+<!-- Chart container (always present, hidden when empty) -->
+<div class="chart-container" id="compareChartContainer" style="{% if not chart %}display:none{% endif %}">
+    <div id="compareChart"></div>
+</div>
+
+{% if compare_data %}
+<!-- Server-rendered comparison table (Flask mode) -->
+<div class="table-container mt-4" id="compareTableContainer">
+    <div class="table-header">
+        <div class="table-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+            Metrics Comparison
+        </div>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    {% for d in compare_data %}
+                    <th>{{ d.symbol }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="text-muted">Last Close</td>
+                    {% for d in compare_data %}<td class="cell-mono">{{ fmt_num(d.get('last_close')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Total Return</td>
+                    {% for d in compare_data %}<td class="cell-mono {% if d.get('total_return') is not none %}{% if d.total_return > 0 %}cell-positive{% elif d.total_return < 0 %}cell-negative{% endif %}{% endif %}">{{ fmt_pct(d.get('total_return')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">CAGR</td>
+                    {% for d in compare_data %}<td class="cell-mono {% if d.get('cagr') is not none %}{% if d.cagr > 0 %}cell-positive{% elif d.cagr < 0 %}cell-negative{% endif %}{% endif %}">{{ fmt_pct(d.get('cagr')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Volatility</td>
+                    {% for d in compare_data %}<td class="cell-mono">{{ fmt_pct(d.get('annualized_volatility')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Max Drawdown</td>
+                    {% for d in compare_data %}<td class="cell-mono cell-negative">{{ fmt_pct(d.get('max_drawdown')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Sharpe Ratio</td>
+                    {% for d in compare_data %}<td class="cell-mono">{{ fmt_num(d.get('sharpe_ratio')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Beta</td>
+                    {% for d in compare_data %}<td class="cell-mono">{{ fmt_num(d.get('beta')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Correlation</td>
+                    {% for d in compare_data %}<td class="cell-mono">{{ fmt_num(d.get('correlation')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">YTD Return</td>
+                    {% for d in compare_data %}<td class="cell-mono {% if d.get('return_ytd') is not none %}{% if d.return_ytd > 0 %}cell-positive{% elif d.return_ytd < 0 %}cell-negative{% endif %}{% endif %}">{{ fmt_pct(d.get('return_ytd')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">1M Return</td>
+                    {% for d in compare_data %}<td class="cell-mono {% if d.get('return_1m') is not none %}{% if d.return_1m > 0 %}cell-positive{% elif d.return_1m < 0 %}cell-negative{% endif %}{% endif %}">{{ fmt_pct(d.get('return_1m')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">1Y Return</td>
+                    {% for d in compare_data %}<td class="cell-mono {% if d.get('return_1y') is not none %}{% if d.return_1y > 0 %}cell-positive{% elif d.return_1y < 0 %}cell-negative{% endif %}{% endif %}">{{ fmt_pct(d.get('return_1y')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Volume Trend</td>
+                    {% for d in compare_data %}<td class="cell-mono">{{ fmt_num(d.get('volume_trend')) }}x</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">52W High</td>
+                    {% for d in compare_data %}<td class="cell-mono">{{ fmt_num(d.get('52w_high')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">52W Low</td>
+                    {% for d in compare_data %}<td class="cell-mono">{{ fmt_num(d.get('52w_low')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">P/E Ratio</td>
+                    {% for d in compare_data %}<td class="cell-mono">{{ fmt_num(d.get('pe_ratio')) }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Div Yield</td>
+                    {% for d in compare_data %}<td class="cell-mono">{{ fmt_num(d.get('dividend_yield')) }}%</td>{% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<!-- Client-rendered table placeholder (static/Netlify mode) -->
+<div class="table-container mt-4" id="compareTableContainer" style="display:none">
+    <div class="table-header">
+        <div class="table-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+            Metrics Comparison
+        </div>
+    </div>
+    <div class="table-wrapper" id="compareTableBody"></div>
+</div>
+{% endif %}
+
+<div class="empty-state" id="emptyState" {% if selected or compare_data %}style="display:none"{% endif %}>
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <h3>Select Stocks to Compare</h3>
+    <p>Use the dropdown above to add up to 5 stocks for side-by-side comparison.</p>
+</div>
+
+<!-- Loading spinner for client-side rendering -->
+<div id="compareLoading" style="display:none">
+    <div class="spinner"></div>
+    <p class="text-muted" style="text-align:center;margin-top:0.5rem">Loading comparison data...</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var CHART_COLORS = ['#CFB53B', '#5B8DEF', '#2e7d32', '#c62828', '#9c27b0'];
+    var SERVER_RENDERED = {{ 'true' if compare_data else 'false' }};
+
+    var addBtn = document.getElementById('addBtn');
+    var addSymbol = document.getElementById('addSymbol');
+    var symbolsInput = document.getElementById('symbolsInput');
+    var chipContainer = document.getElementById('chipContainer');
+    var emptyState = document.getElementById('emptyState');
+    var chartContainer = document.getElementById('compareChartContainer');
+    var tableContainer = document.getElementById('compareTableContainer');
+    var loading = document.getElementById('compareLoading');
+
+    function getSelected() {
+        var val = symbolsInput.value.trim();
+        return val ? val.split(',').filter(function(s) { return s.trim(); }) : [];
+    }
+
+    function updateUrl() {
+        var symbols = getSelected();
+        window.location.href = '/compare?s=' + symbols.join(',');
+    }
+
+    addBtn.addEventListener('click', function() {
+        var sym = addSymbol.value.trim();
+        if (!sym) return;
+        var current = getSelected();
+        if (current.length >= 5) { alert('Maximum 5 stocks'); return; }
+        if (current.includes(sym)) return;
+        current.push(sym);
+        symbolsInput.value = current.join(',');
+        updateUrl();
+    });
+
+    chipContainer.addEventListener('click', function(e) {
+        var btn = e.target.closest('.chip-remove');
+        if (!btn) return;
+        var sym = btn.dataset.symbol;
+        var current = getSelected().filter(function(s) { return s !== sym; });
+        symbolsInput.value = current.join(',');
+        updateUrl();
+    });
+
+    // ── Server-rendered mode: Plotly chart from Jinja2 ──────────────────
+    {% if chart %}
+    var compareData = {{ chart|safe }};
+    Plotly.newPlot('compareChart', compareData.data, compareData.layout, {responsive: true, displayModeBar: false});
+    {% endif %}
+
+    // ── Client-side mode: fetch JSON and render when on static site ─────
+    if (!SERVER_RENDERED) {
+        var params = new URLSearchParams(window.location.search);
+        var sParam = params.get('s');
+        if (sParam) {
+            var urlSymbols = sParam.split(',').map(function(s) { return s.trim().toUpperCase(); }).filter(Boolean).slice(0, 5);
+            if (urlSymbols.length > 0) {
+                // Update chips from URL params
+                symbolsInput.value = urlSymbols.join(',');
+                chipContainer.innerHTML = '';
+                urlSymbols.forEach(function(s) {
+                    var chip = document.createElement('div');
+                    chip.className = 'chip';
+                    chip.innerHTML = s + ' <button type="button" class="chip-remove" data-symbol="' + s + '">&times;</button>';
+                    chipContainer.appendChild(chip);
+                });
+
+                emptyState.style.display = 'none';
+                loading.style.display = 'block';
+                clientSideCompare(urlSymbols);
+            }
+        }
+    }
+
+    function fmtPct(val) {
+        if (val === null || val === undefined || isNaN(val)) return 'N/A';
+        return (val * 100).toFixed(2) + '%';
+    }
+    function fmtNum(val, dec) {
+        dec = dec !== undefined ? dec : 2;
+        if (val === null || val === undefined || isNaN(val)) return 'N/A';
+        return Number(val).toFixed(dec);
+    }
+    function colorClass(val) {
+        if (val === null || val === undefined || isNaN(val)) return '';
+        return val > 0 ? 'cell-positive' : val < 0 ? 'cell-negative' : '';
+    }
+
+    function clientSideCompare(symbols) {
+        // Fetch price data for each symbol and master metrics
+        var pricePromises = symbols.map(function(sym) {
+            return fetch('/api/prices/' + sym + '.json')
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .catch(function() { return null; });
+        });
+        var masterPromise = fetch('/api/master.json')
+            .then(function(r) { return r.ok ? r.json() : {}; })
+            .catch(function() { return {}; });
+
+        Promise.all([Promise.all(pricePromises), masterPromise]).then(function(results) {
+            var priceDataArray = results[0];
+            var masterData = results[1];
+            loading.style.display = 'none';
+
+            // ── Render normalized price chart ────────────────────────────
+            var traces = [];
+            for (var i = 0; i < symbols.length; i++) {
+                var sym = symbols[i];
+                var pd = priceDataArray[i];
+                if (!pd || !pd.dates || pd.dates.length < 2) continue;
+                var basePrice = pd.close[0];
+                var normalized = pd.close.map(function(v) { return v / basePrice * 100; });
+                traces.push({
+                    x: pd.dates,
+                    y: normalized,
+                    mode: 'lines',
+                    name: sym,
+                    line: { color: CHART_COLORS[i % CHART_COLORS.length], width: 2 },
+                    hovertemplate: sym + ': %{y:.1f}<extra></extra>'
+                });
+            }
+
+            if (traces.length > 0) {
+                chartContainer.style.display = 'block';
+                var layout = {
+                    title: { text: '<b>Price Comparison</b> — Normalized to 100 at First Date', font: { size: 14 } },
+                    xaxis: { title: '' },
+                    yaxis: { title: 'Normalized Price (Base = 100)' },
+                    plot_bgcolor: '#ffffff',
+                    paper_bgcolor: '#ffffff',
+                    font: { family: 'Inter, system-ui, sans-serif', color: '#1a1a1a' },
+                    margin: { l: 60, r: 30, t: 55, b: 50 },
+                    legend: { orientation: 'h', yanchor: 'bottom', y: 1.02, xanchor: 'right', x: 1 },
+                    shapes: [{ type: 'line', x0: 0, x1: 1, xref: 'paper', y0: 100, y1: 100, line: { dash: 'dot', color: '#c0c0c0', width: 1 } }]
+                };
+                Plotly.newPlot('compareChart', traces, layout, { responsive: true, displayModeBar: false });
+            }
+
+            // ── Render metrics comparison table ─────────────────────────
+            var metricsRows = [
+                ['Last Close', 'last_close', 'num'],
+                ['Total Return', 'total_return', 'pct_color'],
+                ['CAGR', 'cagr', 'pct_color'],
+                ['Volatility', 'annualized_volatility', 'pct'],
+                ['Max Drawdown', 'max_drawdown', 'pct_neg'],
+                ['Sharpe Ratio', 'sharpe_ratio', 'num'],
+                ['Beta', 'beta', 'num'],
+                ['Correlation', 'correlation', 'num'],
+                ['YTD Return', 'return_ytd', 'pct_color'],
+                ['1M Return', 'return_1m', 'pct_color'],
+                ['1Y Return', 'return_1y', 'pct_color'],
+                ['Volume Trend', 'volume_trend', 'numx'],
+                ['52W High', '52w_high', 'num'],
+                ['52W Low', '52w_low', 'num'],
+                ['P/E Ratio', 'pe_ratio', 'num'],
+                ['Div Yield', 'dividend_yield', 'numpct']
+            ];
+
+            var hasMetrics = symbols.some(function(s) { return masterData[s]; });
+            if (hasMetrics) {
+                var html = '<table><thead><tr><th>Metric</th>';
+                symbols.forEach(function(s) { html += '<th>' + s + '</th>'; });
+                html += '</tr></thead><tbody>';
+
+                metricsRows.forEach(function(row) {
+                    var label = row[0], key = row[1], fmt = row[2];
+                    html += '<tr><td class="text-muted">' + label + '</td>';
+                    symbols.forEach(function(s) {
+                        var d = masterData[s] || {};
+                        var val = d[key];
+                        var cls = 'cell-mono';
+                        var txt = '';
+                        if (fmt === 'pct' || fmt === 'pct_color') {
+                            txt = fmtPct(val);
+                            if (fmt === 'pct_color') cls += ' ' + colorClass(val);
+                        } else if (fmt === 'pct_neg') {
+                            txt = fmtPct(val);
+                            cls += ' cell-negative';
+                        } else if (fmt === 'numx') {
+                            txt = fmtNum(val) + 'x';
+                        } else if (fmt === 'numpct') {
+                            txt = fmtNum(val) + '%';
+                        } else {
+                            txt = fmtNum(val);
+                        }
+                        html += '<td class="' + cls + '">' + txt + '</td>';
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+
+                document.getElementById('compareTableBody').innerHTML = html;
+                tableContainer.style.display = 'block';
+            }
+        }).catch(function(err) {
+            loading.style.display = 'none';
+            console.error('Compare fetch error:', err);
+        });
+    }
+});
+</script>
+{% endblock %}
