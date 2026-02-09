@@ -1,0 +1,10 @@
+# Minimal dependencies for static site generation (freeze.py)
+# Does NOT include data-fetching packages (psx-data-reader, yfinance, pandas-datareader)
+# since freeze.py only reads existing CSV data and renders HTML.
+pandas>=2.0.0
+numpy>=1.24.0
+flask>=3.0.0
+plotly>=5.18.0
+requests>=2.31.0
+scipy>=1.11.0
+tqdm>=4.66.0

@@ -1,0 +1,54 @@
+# Netlify Configuration for PSX Analyzer
+# 
+# For drag-and-drop deploy:
+#   1. Run: python freeze.py
+#   2. Drag the 'build/' folder to https://app.netlify.com/drop
+#
+# For git-based deploy (requires data/csv/ to be committed):
+#   Connect your repo and Netlify will use these settings.
+
+[build]
+  publish = "build"
+  command = "pip install -r requirements-build.txt && python freeze.py"
+
+[build.environment]
+  PYTHON_VERSION = "3.11"
+
+# Pretty URLs: /screener -> /screener/index.html
+[[redirects]]
+  from = "/api/symbols"
+  to = "/api/symbols.json"
+  status = 200
+
+# Compare page handles query params client-side
+[[redirects]]
+  from = "/compare"
+  to = "/compare/index.html"
+  status = 200
+  force = true
+
+# Custom headers for CSV downloads
+[[headers]]
+  for = "/download/*.csv"
+  [headers.values]
+    Content-Type = "text/csv; charset=utf-8"
+    Content-Disposition = "attachment"
+
+[[headers]]
+  for = "/download/symbol/*"
+  [headers.values]
+    Content-Type = "text/csv; charset=utf-8"
+    Content-Disposition = "attachment"
+
+# Python source file downloads
+[[headers]]
+  for = "/download/source/*.py"
+  [headers.values]
+    Content-Type = "text/x-python; charset=utf-8"
+    Content-Disposition = "attachment"
+
+# Cache static assets aggressively
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
