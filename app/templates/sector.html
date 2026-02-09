@@ -10,9 +10,9 @@
     <p class="page-subtitle">Performance aggregates and relative strength by industry sector{% if data_range %} · {{ data_range }}{% endif %}</p>
 </div>
 
-{% if treemap %}
+{% if heatmap %}
 <div class="chart-container mb-4">
-    <div id="treemapChart"></div>
+    <div id="sectorHeatmap"></div>
 </div>
 {% endif %}
 
@@ -82,9 +82,9 @@
 
 {% block scripts %}
 <script>
-{% if treemap %}
-    var treemapData = {{ treemap|safe }};
-    Plotly.newPlot('treemapChart', treemapData.data, treemapData.layout, {responsive: true, displayModeBar: false});
+{% if heatmap %}
+    var heatmapData = {{ heatmap|safe }};
+    Plotly.newPlot('sectorHeatmap', heatmapData.data, heatmapData.layout, {responsive: true, displayModeBar: false});
 {% endif %}
 </script>
 {% endblock %}

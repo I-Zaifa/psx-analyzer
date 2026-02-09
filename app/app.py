@@ -36,7 +36,13 @@ def load_master() -> pd.DataFrame:
 def load_sectors() -> pd.DataFrame:
     path = CSV_DIR / "sectors.csv"
     if path.exists():
-        return pd.read_csv(path)
+        df = pd.read_csv(path)
+        if "sector" in df.columns and not df.empty:
+            df = df.dropna(subset=["sector"])
+            df["sector"] = df["sector"].astype(str).str.strip()
+            df = df[df["sector"].str.len() > 0]
+            df = df[~df["sector"].str.lower().isin(["nan", "none"])]
+        return df
     return pd.DataFrame()
 
 
@@ -561,41 +567,94 @@ def make_return_distribution_chart(master_df: pd.DataFrame) -> str:
     return _fig_to_json(fig)
 
 
-def make_sector_treemap(sectors_df: pd.DataFrame) -> str:
-    """Sector treemap sized by company count, colored by avg return."""
+def make_sector_heatmap(sectors_df: pd.DataFrame) -> str:
+    """Sector heatmap showing percentile ranks across key metrics."""
     if sectors_df.empty:
         return ""
-    df = sectors_df.dropna(subset=["avg_total_return"]).copy()
+    df = sectors_df.dropna(subset=["sector"]).copy()
     if df.empty:
         return ""
-    df = df[df["sector"].astype(str).str.strip().str.len() > 0]
     df["sector"] = df["sector"].astype(str).str.strip()
+    df = df[df["sector"].str.len() > 0]
+    df = df[~df["sector"].str.lower().isin(["nan", "none"])]
     if df.empty:
         return ""
-    df["return_pct"] = df["avg_total_return"] * 100
-    df["color_val"] = df["return_pct"]
-    df["hover_text"] = df.apply(
-        lambda r: f"<b>{r['sector']}</b><br>"
-                  f"Companies: {int(r['num_companies'])}<br>"
-                  f"Avg Return: {r['return_pct']:.1f}%", axis=1)
 
-    fig = px.treemap(
-        df, path=["sector"], values="num_companies",
-        color="color_val",
-        color_continuous_scale=[RED, "#f5f5f5", GREEN],
-        color_continuous_midpoint=0,
-    )
+    metric_defs = [
+        {"key": "avg_total_return", "label": "Avg Return", "short": "Return", "fmt": "pct", "higher_better": True},
+        {"key": "avg_cagr", "label": "Avg CAGR", "short": "CAGR", "fmt": "pct", "higher_better": True},
+        {"key": "avg_volatility", "label": "Volatility", "short": "Vol", "fmt": "pct", "higher_better": False},
+        {"key": "avg_sharpe", "label": "Sharpe", "short": "Sharpe", "fmt": "num", "higher_better": True},
+        {"key": "avg_beta", "label": "Beta", "short": "Beta", "fmt": "num", "higher_better": False},
+        {"key": "avg_max_drawdown", "label": "Max Drawdown", "short": "Max DD", "fmt": "pct", "higher_better": False},
+    ]
+    metric_defs = [m for m in metric_defs if m["key"] in df.columns]
+    if not metric_defs:
+        return ""
+
+    if "avg_total_return" in df.columns:
+        df = df.sort_values("avg_total_return", ascending=False)
+    else:
+        df = df.sort_values("sector")
+
+    def fmt_value(value, fmt):
+        if pd.isna(value):
+            return "N/A"
+        if fmt == "pct":
+            return f"{value * 100:.1f}%"
+        return f"{value:.2f}"
+
+    percentiles = {}
+    for meta in metric_defs:
+        series = df[meta["key"]].astype(float)
+        pct = series.rank(pct=True)
+        if not meta["higher_better"]:
+            pct = 1 - pct
+        percentiles[meta["key"]] = pct.fillna(0.5)
+
+    sectors = df["sector"].tolist()
+    metric_labels = [m["short"] for m in metric_defs]
+    short_sectors = [s if len(s) <= 26 else f"{s[:23]}…" for s in sectors]
+    z_matrix = []
+    hover_matrix = []
+    for idx, sector in enumerate(sectors):
+        row_z = []
+        row_hover = []
+        for meta in metric_defs:
+            raw = df.iloc[idx][meta["key"]]
+            pct = float(percentiles[meta["key"]].iloc[idx])
+            raw_display = fmt_value(raw, meta["fmt"])
+            pct_display = f"{pct * 100:.0f}%" if raw_display != "N/A" else "N/A"
+            row_z.append(pct)
+            row_hover.append(
+                f"<b>{sector}</b><br>{meta['label']}: {raw_display}<br>Percentile: {pct_display}"
+            )
+        z_matrix.append(row_z)
+        hover_matrix.append(row_hover)
+
+    fig = go.Figure(data=go.Heatmap(
+        z=z_matrix,
+        x=metric_labels,
+        y=short_sectors,
+        customdata=hover_matrix,
+        hovertemplate="%{customdata}<extra></extra>",
+        colorscale=[[0, RED], [0.5, "#f5f5f5"], [1, GREEN]],
+        zmin=0,
+        zmax=1,
+        colorbar=dict(title="Percentile", tickformat=".0%"),
+    ))
+
+    height = max(520, 24 * len(sectors) + 160)
     fig.update_layout(
-        title=dict(text="<b>Sector Treemap</b> — Size: # Companies · Color: Avg Return",
+        title=dict(text="<b>Sector Heatmap</b> — Percentile Rank by Metric (green = better)",
                    font=dict(size=14)),
-        **_base_layout()
+        height=height,
+        **_base_layout(margin=dict(l=180, r=40, t=70, b=60), hovermode="closest")
     )
-    fig.update_traces(
-        texttemplate="<b>%{label}</b><br>%{customdata[0]:.0f}%",
-        customdata=df[["return_pct"]].values,
-        hovertemplate="%{customdata[0]:.1f}%<extra>%{label}</extra>"
-    )
-    fig.update_coloraxes(showscale=False)
+    fig.update_xaxes(side="top", tickangle=-25, showgrid=False, zeroline=False,
+                     tickfont=dict(size=10))
+    fig.update_yaxes(autorange="reversed", showgrid=False,
+                     tickfont=dict(size=10), automargin=True)
     return _fig_to_json(fig)
 
 
@@ -791,10 +850,10 @@ def compare():
 def sectors_page():
     sectors_df = load_sectors()
     master = load_master()
-    treemap = make_sector_treemap(sectors_df)
+    heatmap = make_sector_heatmap(sectors_df)
     return render_template("sector.html",
                            sectors=sectors_df,
-                           treemap=treemap,
+                           heatmap=heatmap,
                            master=master)
 
 
