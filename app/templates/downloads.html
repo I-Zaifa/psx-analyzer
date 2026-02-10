@@ -17,7 +17,7 @@
         About This Project
     </div>
     <p class="text-sm" style="margin-bottom:0.75rem">
-        PSX Analyzer is a quantitative analysis tool for the Pakistan Stock Exchange. It fetches daily price and volume data for every listed equity, computes standard financial metrics, and presents the results in an interactive dashboard. The entire pipeline &mdash; data collection, computation, and visualization &mdash; is written in Python and runs locally before being exported as a static site.
+        PSX Analyzer is a quantitative analysis tool for the Pakistan Stock Exchange. It fetches daily price and volume data for every listed equity, computes standard financial metrics, and presents the results in an interactive dashboard. The entire pipeline i.e. data collection, computation, and visualization is written in Python and runs locally before being exported as a static site.If you are visiting beyond the Feb of 2026, you will need to run the python files again if the latest data is required. All instructions are in the repository.
     </p>
 
     <div class="section-title" style="margin-bottom:0.75rem">
@@ -33,8 +33,8 @@
             <tr><td>Daily close &amp; volume</td><td>PSX <code>/timeseries/eod/{SYMBOL}</code></td><td>&mdash;</td></tr>
             <tr><td>KSE-100 Index</td><td>PSX <code>/timeseries/eod/KSE100</code> (2021&ndash;present)</td><td>Yahoo Finance <code>^KSE</code> (2010&ndash;2021)</td></tr>
             <tr><td>USD/PKR exchange rate</td><td>Yahoo Finance (<code>USDPKR=X</code>)</td><td>Bundled CSV</td></tr>
-            <tr><td>CPI / Inflation</td><td>World Bank API (<code>FP.CPI.TOTL.ZG</code>)</td><td>FRED &rarr; Bundled CSV</td></tr>
-            <tr><td>SBP Policy Rate</td><td>FRED (<code>INTDSRPKM193N</code>)</td><td>Bundled CSV</td></tr>
+            <tr><td>CPI / Inflation</td><td>World Bank API </td><td>FRED &rarr; Bundled CSV</td></tr>
+            <tr><td>SBP Policy Rate</td><td>FRED API</td><td>Bundled CSV</td></tr>
             <tr><td>Fundamentals (P/E, EPS, etc.)</td><td>PSX Data Portal company pages</td><td>&mdash;</td></tr>
         </tbody>
     </table>
@@ -64,15 +64,11 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         Disclosure &amp; Limitations
     </div>
-    <ul class="methodology-list">
-        <li>This is a <strong>research and educational tool</strong>, not financial advice. Do not make investment decisions based solely on this data.</li>
-        <li>Price data comes from PSX&rsquo;s public data portal. It may contain gaps, errors, or delays. Corporate actions (splits, bonuses) are <strong>not adjusted</strong>.</li>
-        <li>Only close price and volume are available from the timeseries endpoint; open/high/low are not provided for most stocks.</li>
-        <li>Fundamentals (P/E, EPS, etc.) are scraped from PSX company pages and may be stale or missing for many symbols.</li>
-        <li>Beta and correlation are computed against the KSE-100 index. Dates are normalized to midnight for alignment between sources.</li>
-        <li>The risk-free rate used for Sharpe ratio is the average SBP policy rate over the data period (~10%).</li>
-        <li>Macro data (CPI, T-bill) has triple fallback: live API, secondary API, bundled CSV. If all live sources fail, bundled data ships with the project.</li>
-        <li>All code is open and available for download below. Verify any result independently before relying on it.</li>
+    <ul class="methodology-list" style="margin-left: 1rem;">
+        <li>&ndash; Price data comes from the PSX public data portal. It may contain gaps, errors, or delays. Corporate actions (splits, bonuses) might not be adjusted where data was not properly available.</li>
+        <li>&ndash; This is a research and analytical tool, not financial advice. All code is open and available for download below. Verify any result independently before relying on it.</li>
+        <li>&ndash; Macro data (CPI, T-bill) has triple fallback: live API, secondary API, bundled CSV. If all live sources fail, bundled data ships with the project.</li>
+        <li>&ndash; This project was built in it's entirety using <em>Windsurf</em>.</li>
     </ul>
 </div>
 
