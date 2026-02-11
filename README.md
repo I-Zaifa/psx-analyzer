@@ -53,7 +53,7 @@ python run.py --icons                 # Generate PWA icon files
 
 The full pipeline takes about 15–30 minutes to pull data for all ~600 companies.
 --
-The `freeze.py` script pre-renders every page (dashboard, all 600+ stock pages, screener, sectors, downloads) into plain HTML with embedded Plotly charts. The Compare page works fully on the static site too — it fetches pre-built JSON data client-side and renders charts in the browser. No server, no database, just static files that load fast.
+The `freeze.py` script pre-renders every page (dashboard, all 600+ stock pages, screener, sectors, downloads) into plain HTML with embedded Plotly charts. The Compare page works fully on the static site too: it fetches pre-built JSON data client-side and renders charts in the browser. No server, no database, just static files that load fast.
 
 ## Built With
 - **Python** + Flask for the backend
@@ -61,7 +61,7 @@ The `freeze.py` script pre-renders every page (dashboard, all 600+ stock pages, 
 - **pandas** + numpy + scipy for number crunching
 - **psx-data-reader** + yfinance for market data
 - **World Bank API** + FRED for macro data
-- Custom CSS with Inter font — no heavy UI frameworks
+- No heavy UI frameworks
 
 ## A Few Things to Know
 - If a stock fails to fetch, the pipeline logs the error and continues with the rest.
