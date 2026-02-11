@@ -133,7 +133,34 @@ def _base_layout(**overrides):
 
 
 def _fig_to_json(fig) -> str:
-    return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    """Serialize Plotly figure to plain JSON arrays (no binary bdata)."""
+    import base64, struct
+
+    _dtype_map = {
+        'i1': ('b', 1), 'u1': ('B', 1), 'i2': ('<h', 2), 'u2': ('<H', 2),
+        'i4': ('<i', 4), 'u4': ('<I', 4), 'f4': ('<f', 4), 'f8': ('<d', 8),
+    }
+
+    def _decode_bdata(d):
+        """Recursively walk dict/list and decode any bdata-encoded arrays."""
+        if isinstance(d, np.ndarray):
+            if np.issubdtype(d.dtype, np.datetime64):
+                return [pd.Timestamp(v).isoformat() for v in d]
+            return d.tolist()
+        if isinstance(d, dict):
+            if 'bdata' in d and 'dtype' in d:
+                fmt, size = _dtype_map.get(d['dtype'], ('<d', 8))
+                raw = base64.b64decode(d['bdata'])
+                n = len(raw) // size
+                return list(struct.unpack(f'{n}{fmt[-1]}', raw))
+            return {k: _decode_bdata(v) for k, v in d.items()}
+        if isinstance(d, (list, tuple)):
+            return [_decode_bdata(i) for i in d]
+        return d
+
+    fig_dict = fig.to_plotly_json()
+    clean = _decode_bdata(fig_dict)
+    return json.dumps(clean, default=str)
 
 
 def _add_range_buttons(fig):
