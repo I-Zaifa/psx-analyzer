@@ -23,7 +23,7 @@ A complete analysis dashboard for the *Pakistan Stock Exchange*. It pulls real m
 | KSE-100 Index | Yahoo Finance (`^KSE`) + PSX timeseries |
 | USD/PKR Exchange Rate | Yahoo Finance (`USDPKR=X`) |
 | CPI / Inflation | World Bank API → FRED fallback → bundled data |
-| SBP Policy Rate | FRED (`INTDSRPKM193N`) → bundled data |
+| SBP Policy Rate | FRED → bundled data |
 | Fundamentals (P/E, EPS, etc.) | PSX Data Portal company pages |
 
 All macro data has multiple fallback sources so nothing breaks if one API is down.
