@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Quantitative analysis of 600+ stocks on the Pakistan Stock Exchange. Daily prices, financial metrics, sector breakdowns, and macro indicators from 2010 to 2026.">
+    <meta name="theme-color" content="#CFB53B">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta property="og:title" content="PSX Analyzer">
+    <meta property="og:description" content="Quantitative analysis of 600+ stocks on the Pakistan Stock Exchange. Daily prices, financial metrics, sector breakdowns, and macro indicators.">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="en_US">
+    <title>PSX Analyzer - Sectors</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">
+                <svg class="nav-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="32" height="32" rx="0" fill="#CFB53B"/>
+                    <path d="M8 22L12 14L16 18L20 10L24 16" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="24" cy="16" r="2" fill="white"/>
+                </svg>
+                <span>PSX Analyzer</span>
+                <span class="data-date-badge">as of Feb 06, 2026</span>
+            </a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div class="nav-links" id="navLinks">
+                <a href="/" class="nav-link ">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    Dashboard
+                </a>
+                <a href="/screener" class="nav-link ">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Screener
+                </a>
+                <a href="/compare" class="nav-link ">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Compare
+                </a>
+                <a href="/sectors" class="nav-link active">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Sectors
+                </a>
+                <a href="/downloads" class="nav-link ">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Downloads &amp; About
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    
+    <div id="staleBanner" class="stale-banner" aria-live="polite" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="staleBannerMsg"></span>
+    </div>
+    <script>
+    (function () {
+        var asOf = new Date("Feb 06, 2026");
+        if (isNaN(asOf.getTime())) return;
+        var diffDays = (Date.now() - asOf.getTime()) / 86400000;
+        if (diffDays > 4) {
+            var el = document.getElementById('staleBannerMsg');
+            if (el) el.textContent = 'Data as of Feb 06, 2026 "." the automated pipeline runs Mon\u2013Fri at 17:45 PKT.';
+            var banner = document.getElementById('staleBanner');
+            if (banner) banner.style.display = '';
+        }
+    }());
+    </script>
+    
+
+    <main class="main-content">
+        
+<div class="page-header">
+    <h1 class="page-title">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Sector Analysis
+    </h1>
+    <p class="page-subtitle">Performance aggregates and relative strength by industry sector · Jan 2010 – Feb 2026</p>
+</div>
+
+
+<div class="chart-container mb-4">
+    <div id="sectorHeatmap"></div>
+</div>
+
+
+
+<div class="table-container">
+    <div class="table-header">
+        <div class="table-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M7 12h10M10 18h4"/></svg>
+            Sector Summary (36 sectors)
+        </div>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Sector</th>
+                    <th>Companies</th>
+                    <th>Avg Return</th>
+                    <th>Avg CAGR</th>
+                    <th>Avg Volatility</th>
+                    <th>Avg Sharpe</th>
+                    <th>Avg Beta</th>
+                    <th>Avg Max DD</th>
+                    <th>Best</th>
+                    <th>Worst</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td class="font-bold">INV. BANKS / INV. COS. / SECURITIES COS.</td>
+                    <td class="cell-mono">42</td>
+                    <td class="cell-mono cell-positive">
+                        824.04%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        23.14%
+                    </td>
+                    <td class="cell-mono">62.59%</td>
+                    <td class="cell-mono">0.17</td>
+                    <td class="cell-mono">0.71</td>
+                    <td class="cell-mono cell-negative">-58.94%</td>
+                    <td>
+                        
+                        <a href="/stock/PIAHCLB" class="cell-symbol">PIAHCLB</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/DHPL" class="cell-symbol">DHPL</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">AUTOMOBILE PARTS &amp; ACCESSORIES</td>
+                    <td class="cell-mono">11</td>
+                    <td class="cell-mono cell-positive">
+                        630.77%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        21.84%
+                    </td>
+                    <td class="cell-mono">54.00%</td>
+                    <td class="cell-mono">0.01</td>
+                    <td class="cell-mono">1.00</td>
+                    <td class="cell-mono cell-negative">-74.14%</td>
+                    <td>
+                        
+                        <a href="/stock/BELA" class="cell-symbol">BELA</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/GTYR" class="cell-symbol">GTYR</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">JUTE</td>
+                    <td class="cell-mono">2</td>
+                    <td class="cell-mono cell-positive">
+                        528.74%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        51.15%
+                    </td>
+                    <td class="cell-mono">104.90%</td>
+                    <td class="cell-mono">0.38</td>
+                    <td class="cell-mono">0.76</td>
+                    <td class="cell-mono cell-negative">-65.89%</td>
+                    <td>
+                        
+                        <a href="/stock/SUHJ" class="cell-symbol">SUHJ</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/CJPL" class="cell-symbol">CJPL</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">FERTILIZER</td>
+                    <td class="cell-mono">7</td>
+                    <td class="cell-mono cell-positive">
+                        461.39%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        38.24%
+                    </td>
+                    <td class="cell-mono">34.27%</td>
+                    <td class="cell-mono">0.76</td>
+                    <td class="cell-mono">0.92</td>
+                    <td class="cell-mono cell-negative">-41.39%</td>
+                    <td>
+                        
+                        <a href="/stock/AGL" class="cell-symbol">AGL</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/ENGRO" class="cell-symbol">ENGRO</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">COMMERCIAL BANKS</td>
+                    <td class="cell-mono">21</td>
+                    <td class="cell-mono cell-positive">
+                        420.26%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        28.28%
+                    </td>
+                    <td class="cell-mono">43.83%</td>
+                    <td class="cell-mono">0.42</td>
+                    <td class="cell-mono">0.85</td>
+                    <td class="cell-mono cell-negative">-47.21%</td>
+                    <td>
+                        
+                        <a href="/stock/BML" class="cell-symbol">BML</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/SILK" class="cell-symbol">SILK</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">PROPERTY</td>
+                    <td class="cell-mono">6</td>
+                    <td class="cell-mono cell-positive">
+                        351.17%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        39.12%
+                    </td>
+                    <td class="cell-mono">64.54%</td>
+                    <td class="cell-mono">0.46</td>
+                    <td class="cell-mono">0.76</td>
+                    <td class="cell-mono cell-negative">-60.45%</td>
+                    <td>
+                        
+                        <a href="/stock/JVDCPS" class="cell-symbol">JVDCPS</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/TPLP" class="cell-symbol">TPLP</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">LEATHER &amp; TANNERIES</td>
+                    <td class="cell-mono">6</td>
+                    <td class="cell-mono cell-positive">
+                        301.31%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        22.67%
+                    </td>
+                    <td class="cell-mono">61.00%</td>
+                    <td class="cell-mono">0.11</td>
+                    <td class="cell-mono">0.47</td>
+                    <td class="cell-mono cell-negative">-64.60%</td>
+                    <td>
+                        
+                        <a href="/stock/PAKL" class="cell-symbol">PAKL</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/BATA" class="cell-symbol">BATA</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">TEXTILE SPINNING</td>
+                    <td class="cell-mono">68</td>
+                    <td class="cell-mono cell-positive">
+                        277.62%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        51.69%
+                    </td>
+                    <td class="cell-mono">71.69%</td>
+                    <td class="cell-mono">0.59</td>
+                    <td class="cell-mono">0.54</td>
+                    <td class="cell-mono cell-negative">-54.65%</td>
+                    <td>
+                        
+                        <a href="/stock/BILF" class="cell-symbol">BILF</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/IDYM" class="cell-symbol">IDYM</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">CEMENT</td>
+                    <td class="cell-mono">20</td>
+                    <td class="cell-mono cell-positive">
+                        232.21%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        21.52%
+                    </td>
+                    <td class="cell-mono">46.53%</td>
+                    <td class="cell-mono">0.25</td>
+                    <td class="cell-mono">1.16</td>
+                    <td class="cell-mono cell-negative">-60.10%</td>
+                    <td>
+                        
+                        <a href="/stock/THCCL" class="cell-symbol">THCCL</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/ZELP" class="cell-symbol">ZELP</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">SUGAR &amp; ALLIED INDUSTRIES</td>
+                    <td class="cell-mono">31</td>
+                    <td class="cell-mono cell-positive">
+                        201.97%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        16.02%
+                    </td>
+                    <td class="cell-mono">62.11%</td>
+                    <td class="cell-mono">0.10</td>
+                    <td class="cell-mono">0.39</td>
+                    <td class="cell-mono cell-negative">-53.92%</td>
+                    <td>
+                        
+                        <a href="/stock/SASML" class="cell-symbol">SASML</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/MIRKS" class="cell-symbol">MIRKS</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">TECHNOLOGY &amp; COMMUNICATION</td>
+                    <td class="cell-mono">19</td>
+                    <td class="cell-mono cell-positive">
+                        188.46%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        36.14%
+                    </td>
+                    <td class="cell-mono">52.89%</td>
+                    <td class="cell-mono">0.44</td>
+                    <td class="cell-mono">1.11</td>
+                    <td class="cell-mono cell-negative">-62.53%</td>
+                    <td>
+                        
+                        <a href="/stock/STL" class="cell-symbol">STL</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/AVN" class="cell-symbol">AVN</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">POWER GENERATION &amp; DISTRIBUTION</td>
+                    <td class="cell-mono">15</td>
+                    <td class="cell-mono cell-positive">
+                        184.87%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        15.69%
+                    </td>
+                    <td class="cell-mono">53.07%</td>
+                    <td class="cell-mono">0.02</td>
+                    <td class="cell-mono">0.74</td>
+                    <td class="cell-mono cell-negative">-60.68%</td>
+                    <td>
+                        
+                        <a href="/stock/SGPL" class="cell-symbol">SGPL</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/ALTN" class="cell-symbol">ALTN</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">MODARABAS</td>
+                    <td class="cell-mono">24</td>
+                    <td class="cell-mono cell-positive">
+                        179.78%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        19.35%
+                    </td>
+                    <td class="cell-mono">76.13%</td>
+                    <td class="cell-mono">0.07</td>
+                    <td class="cell-mono">0.43</td>
+                    <td class="cell-mono cell-negative">-53.68%</td>
+                    <td>
+                        
+                        <a href="/stock/FECM" class="cell-symbol">FECM</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/ORIXM" class="cell-symbol">ORIXM</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">AUTOMOBILE ASSEMBLER</td>
+                    <td class="cell-mono">13</td>
+                    <td class="cell-mono cell-positive">
+                        172.98%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        14.49%
+                    </td>
+                    <td class="cell-mono">43.77%</td>
+                    <td class="cell-mono">0.05</td>
+                    <td class="cell-mono">1.17</td>
+                    <td class="cell-mono cell-negative">-66.00%</td>
+                    <td>
+                        
+                        <a href="/stock/SAZEW" class="cell-symbol">SAZEW</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/GHNL" class="cell-symbol">GHNL</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">MISCELLANEOUS</td>
+                    <td class="cell-mono">21</td>
+                    <td class="cell-mono cell-positive">
+                        131.68%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        22.23%
+                    </td>
+                    <td class="cell-mono">71.21%</td>
+                    <td class="cell-mono">0.05</td>
+                    <td class="cell-mono">0.47</td>
+                    <td class="cell-mono cell-negative">-53.59%</td>
+                    <td>
+                        
+                        <a href="/stock/MWMP" class="cell-symbol">MWMP</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/PHDL" class="cell-symbol">PHDL</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">PHARMACEUTICALS</td>
+                    <td class="cell-mono">17</td>
+                    <td class="cell-mono cell-positive">
+                        112.19%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        20.83%
+                    </td>
+                    <td class="cell-mono">46.04%</td>
+                    <td class="cell-mono">0.16</td>
+                    <td class="cell-mono">0.83</td>
+                    <td class="cell-mono cell-negative">-62.12%</td>
+                    <td>
+                        
+                        <a href="/stock/HALEON" class="cell-symbol">HALEON</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/GSKCH" class="cell-symbol">GSKCH</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">VANASPATI &amp; ALLIED INDUSTRIES</td>
+                    <td class="cell-mono">3</td>
+                    <td class="cell-mono cell-positive">
+                        108.93%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        9.11%
+                    </td>
+                    <td class="cell-mono">42.12%</td>
+                    <td class="cell-mono">0.00</td>
+                    <td class="cell-mono">0.41</td>
+                    <td class="cell-mono cell-negative">-45.83%</td>
+                    <td>
+                        
+                        <a href="/stock/SSOM" class="cell-symbol">SSOM</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/POML" class="cell-symbol">POML</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">TEXTILE COMPOSITE</td>
+                    <td class="cell-mono">53</td>
+                    <td class="cell-mono cell-positive">
+                        99.12%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        20.29%
+                    </td>
+                    <td class="cell-mono">52.64%</td>
+                    <td class="cell-mono">0.16</td>
+                    <td class="cell-mono">0.42</td>
+                    <td class="cell-mono cell-negative">-46.15%</td>
+                    <td>
+                        
+                        <a href="/stock/KOIL" class="cell-symbol">KOIL</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/ANL" class="cell-symbol">ANL</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">CHEMICAL</td>
+                    <td class="cell-mono">27</td>
+                    <td class="cell-mono cell-positive">
+                        99.07%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        19.40%
+                    </td>
+                    <td class="cell-mono">48.54%</td>
+                    <td class="cell-mono">0.05</td>
+                    <td class="cell-mono">0.77</td>
+                    <td class="cell-mono cell-negative">-60.32%</td>
+                    <td>
+                        
+                        <a href="/stock/LPGL" class="cell-symbol">LPGL</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/EPCL" class="cell-symbol">EPCL</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">OIL &amp; GAS EXPLORATION COMPANIES</td>
+                    <td class="cell-mono">4</td>
+                    <td class="cell-mono cell-positive">
+                        89.44%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        9.78%
+                    </td>
+                    <td class="cell-mono">48.54%</td>
+                    <td class="cell-mono">0.08</td>
+                    <td class="cell-mono">1.10</td>
+                    <td class="cell-mono cell-negative">-50.93%</td>
+                    <td>
+                        
+                        <a href="/stock/OGDC" class="cell-symbol">OGDC</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/MARI" class="cell-symbol">MARI</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">TRANSPORT</td>
+                    <td class="cell-mono">6</td>
+                    <td class="cell-mono cell-positive">
+                        89.05%
+                    </td>
+                    <td class="cell-mono cell-negative">
+                        -2.77%
+                    </td>
+                    <td class="cell-mono">50.22%</td>
+                    <td class="cell-mono">-0.26</td>
+                    <td class="cell-mono">0.79</td>
+                    <td class="cell-mono cell-negative">-58.29%</td>
+                    <td>
+                        
+                        <a href="/stock/PNSC" class="cell-symbol">PNSC</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/PICT" class="cell-symbol">PICT</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">GLASS &amp; CERAMICS</td>
+                    <td class="cell-mono">9</td>
+                    <td class="cell-mono cell-positive">
+                        86.92%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        8.66%
+                    </td>
+                    <td class="cell-mono">44.14%</td>
+                    <td class="cell-mono">-0.08</td>
+                    <td class="cell-mono">0.76</td>
+                    <td class="cell-mono cell-negative">-56.03%</td>
+                    <td>
+                        
+                        <a href="/stock/KCL" class="cell-symbol">KCL</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/STCL" class="cell-symbol">STCL</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">FOOD &amp; PERSONAL CARE PRODUCTS</td>
+                    <td class="cell-mono">27</td>
+                    <td class="cell-mono cell-positive">
+                        77.18%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        11.46%
+                    </td>
+                    <td class="cell-mono">47.34%</td>
+                    <td class="cell-mono">0.01</td>
+                    <td class="cell-mono">0.78</td>
+                    <td class="cell-mono cell-negative">-54.82%</td>
+                    <td>
+                        
+                        <a href="/stock/QUICE" class="cell-symbol">QUICE</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/BNL" class="cell-symbol">BNL</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">SYNTHETIC &amp; RAYON</td>
+                    <td class="cell-mono">11</td>
+                    <td class="cell-mono cell-positive">
+                        76.92%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        240.49%
+                    </td>
+                    <td class="cell-mono">39.27%</td>
+                    <td class="cell-mono">5.49</td>
+                    <td class="cell-mono">0.40</td>
+                    <td class="cell-mono cell-negative">-36.87%</td>
+                    <td>
+                        
+                        <a href="/stock/NSRM" class="cell-symbol">NSRM</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/GATI" class="cell-symbol">GATI</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">CLOSE - END MUTUAL FUND</td>
+                    <td class="cell-mono">5</td>
+                    <td class="cell-mono cell-positive">
+                        71.29%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        9.95%
+                    </td>
+                    <td class="cell-mono">50.73%</td>
+                    <td class="cell-mono">0.06</td>
+                    <td class="cell-mono">0.53</td>
+                    <td class="cell-mono cell-negative">-39.43%</td>
+                    <td>
+                        
+                        <a href="/stock/TSMF" class="cell-symbol">TSMF</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/INMF" class="cell-symbol">INMF</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">INSURANCE</td>
+                    <td class="cell-mono">32</td>
+                    <td class="cell-mono cell-positive">
+                        69.85%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        13.66%
+                    </td>
+                    <td class="cell-mono">53.38%</td>
+                    <td class="cell-mono">0.05</td>
+                    <td class="cell-mono">0.47</td>
+                    <td class="cell-mono cell-negative">-47.01%</td>
+                    <td>
+                        
+                        <a href="/stock/PKGI" class="cell-symbol">PKGI</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/IGIL" class="cell-symbol">IGIL</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">OIL &amp; GAS MARKETING COMPANIES</td>
+                    <td class="cell-mono">10</td>
+                    <td class="cell-mono cell-positive">
+                        69.75%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        10.06%
+                    </td>
+                    <td class="cell-mono">44.06%</td>
+                    <td class="cell-mono">-0.04</td>
+                    <td class="cell-mono">1.18</td>
+                    <td class="cell-mono cell-negative">-60.56%</td>
+                    <td>
+                        
+                        <a href="/stock/SNGP" class="cell-symbol">SNGP</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/HTL" class="cell-symbol">HTL</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">TEXTILE WEAVING</td>
+                    <td class="cell-mono">11</td>
+                    <td class="cell-mono cell-positive">
+                        65.96%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        8.69%
+                    </td>
+                    <td class="cell-mono">64.41%</td>
+                    <td class="cell-mono">-0.01</td>
+                    <td class="cell-mono">0.58</td>
+                    <td class="cell-mono cell-negative">-47.99%</td>
+                    <td>
+                        
+                        <a href="/stock/ICCI" class="cell-symbol">ICCI</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/PRWM" class="cell-symbol">PRWM</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">CABLE &amp; ELECTRICAL GOODS</td>
+                    <td class="cell-mono">9</td>
+                    <td class="cell-mono cell-positive">
+                        62.91%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        10.42%
+                    </td>
+                    <td class="cell-mono">54.85%</td>
+                    <td class="cell-mono">-0.03</td>
+                    <td class="cell-mono">0.93</td>
+                    <td class="cell-mono cell-negative">-59.55%</td>
+                    <td>
+                        
+                        <a href="/stock/JOPP" class="cell-symbol">JOPP</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/WAVES" class="cell-symbol">WAVES</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">REAL ESTATE INVESTMENT TRUST</td>
+                    <td class="cell-mono">5</td>
+                    <td class="cell-mono cell-positive">
+                        60.38%
+                    </td>
+                    <td class="cell-mono cell-negative">
+                        -2.86%
+                    </td>
+                    <td class="cell-mono">30.72%</td>
+                    <td class="cell-mono">-0.35</td>
+                    <td class="cell-mono">0.32</td>
+                    <td class="cell-mono cell-negative">-24.00%</td>
+                    <td>
+                        
+                        <a href="/stock/DCR" class="cell-symbol">DCR</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/TPLRF1" class="cell-symbol">TPLRF1</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">REFINERY</td>
+                    <td class="cell-mono">5</td>
+                    <td class="cell-mono cell-positive">
+                        54.49%
+                    </td>
+                    <td class="cell-mono cell-negative">
+                        -1.21%
+                    </td>
+                    <td class="cell-mono">47.60%</td>
+                    <td class="cell-mono">-0.23</td>
+                    <td class="cell-mono">1.74</td>
+                    <td class="cell-mono cell-negative">-66.76%</td>
+                    <td>
+                        
+                        <a href="/stock/ATRL" class="cell-symbol">ATRL</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/BYCO" class="cell-symbol">BYCO</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">LEASING COMPANIES</td>
+                    <td class="cell-mono">9</td>
+                    <td class="cell-mono cell-positive">
+                        35.21%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        56.01%
+                    </td>
+                    <td class="cell-mono">76.53%</td>
+                    <td class="cell-mono">0.85</td>
+                    <td class="cell-mono">0.44</td>
+                    <td class="cell-mono cell-negative">-40.49%</td>
+                    <td>
+                        
+                        <a href="/stock/GRYL" class="cell-symbol">GRYL</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/SLL" class="cell-symbol">SLL</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">WOOLLEN</td>
+                    <td class="cell-mono">1</td>
+                    <td class="cell-mono cell-positive">
+                        32.08%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        5.73%
+                    </td>
+                    <td class="cell-mono">54.53%</td>
+                    <td class="cell-mono">-0.10</td>
+                    <td class="cell-mono">0.76</td>
+                    <td class="cell-mono cell-negative">-64.91%</td>
+                    <td>
+                        
+                        <a href="/stock/BNWM" class="cell-symbol">BNWM</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/BNWM" class="cell-symbol">BNWM</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">ENGINEERING</td>
+                    <td class="cell-mono">20</td>
+                    <td class="cell-mono cell-positive">
+                        22.03%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        4352.68%
+                    </td>
+                    <td class="cell-mono">56.18%</td>
+                    <td class="cell-mono">43.07</td>
+                    <td class="cell-mono">0.83</td>
+                    <td class="cell-mono cell-negative">-67.96%</td>
+                    <td>
+                        
+                        <a href="/stock/DKL" class="cell-symbol">DKL</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/AGHA" class="cell-symbol">AGHA</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">PAPER, BOARD &amp; PACKAGING</td>
+                    <td class="cell-mono">12</td>
+                    <td class="cell-mono cell-positive">
+                        11.46%
+                    </td>
+                    <td class="cell-mono cell-positive">
+                        0.48%
+                    </td>
+                    <td class="cell-mono">34.10%</td>
+                    <td class="cell-mono">-0.25</td>
+                    <td class="cell-mono">0.70</td>
+                    <td class="cell-mono cell-negative">-49.91%</td>
+                    <td>
+                        
+                        <a href="/stock/SPEL" class="cell-symbol">SPEL</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/CEPB" class="cell-symbol">CEPB</a>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="font-bold">TOBACCO</td>
+                    <td class="cell-mono">3</td>
+                    <td class="cell-mono cell-negative">
+                        -11.40%
+                    </td>
+                    <td class="cell-mono cell-negative">
+                        -2.80%
+                    </td>
+                    <td class="cell-mono">49.88%</td>
+                    <td class="cell-mono">-0.28</td>
+                    <td class="cell-mono">0.51</td>
+                    <td class="cell-mono cell-negative">-71.80%</td>
+                    <td>
+                        
+                        <a href="/stock/PAKT" class="cell-symbol">PAKT</a>
+                        
+                    </td>
+                    <td>
+                        
+                        <a href="/stock/KHTC" class="cell-symbol">KHTC</a>
+                        
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="0" fill="#CFB53B"/>
+                        <path d="M8 22L12 14L16 18L20 10L24 16" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>PSX Analyzer</span>
+                </div>
+                <p class="footer-text">Pakistan Stock Exchange analysis. Data from PSX Data Portal, Yahoo Finance, World Bank, and FRED. Covers Jan 2010 – Feb 2026. See <a href="/downloads" style="color:var(--gold-dark)">Downloads &amp; About</a> for methodology.</p>
+                <p class="footer-disclaimer">Verify the data independently by checking the source code before making investment decisions.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    
+<script>
+
+    var heatmapData = {"data": [{"colorbar": {"tickformat": ".0%", "title": {"text": "Percentile"}}, "colorscale": [[0, "#c62828"], [0.5, "#f5f5f5"], [1, "#2e7d32"]], "customdata": [["<b>INV. BANKS / INV. COS. / SECURITIES COS.</b><br>Avg Return: 824.0%<br>Percentile: 100%", "<b>INV. BANKS / INV. COS. / SECURITIES COS.</b><br>Avg CAGR: 23.1%<br>Percentile: 75%", "<b>INV. BANKS / INV. COS. / SECURITIES COS.</b><br>Volatility: 62.6%<br>Percentile: 19%", "<b>INV. BANKS / INV. COS. / SECURITIES COS.</b><br>Sharpe: 0.17<br>Percentile: 72%", "<b>INV. BANKS / INV. COS. / SECURITIES COS.</b><br>Beta: 0.71<br>Percentile: 56%", "<b>INV. BANKS / INV. COS. / SECURITIES COS.</b><br>Max Drawdown: -58.9%<br>Percentile: 53%"], ["<b>AUTOMOBILE PARTS & ACCESSORIES</b><br>Avg Return: 630.8%<br>Percentile: 97%", "<b>AUTOMOBILE PARTS & ACCESSORIES</b><br>Avg CAGR: 21.8%<br>Percentile: 67%", "<b>AUTOMOBILE PARTS & ACCESSORIES</b><br>Volatility: 54.0%<br>Percentile: 36%", "<b>AUTOMOBILE PARTS & ACCESSORIES</b><br>Sharpe: 0.01<br>Percentile: 36%", "<b>AUTOMOBILE PARTS & ACCESSORIES</b><br>Beta: 1.00<br>Percentile: 17%", "<b>AUTOMOBILE PARTS & ACCESSORIES</b><br>Max Drawdown: -74.1%<br>Percentile: 97%"], ["<b>JUTE</b><br>Avg Return: 528.7%<br>Percentile: 94%", "<b>JUTE</b><br>Avg CAGR: 51.1%<br>Percentile: 89%", "<b>JUTE</b><br>Volatility: 104.9%<br>Percentile: 0%", "<b>JUTE</b><br>Sharpe: 0.38<br>Percentile: 78%", "<b>JUTE</b><br>Beta: 0.76<br>Percentile: 44%", "<b>JUTE</b><br>Max Drawdown: -65.9%<br>Percentile: 83%"], ["<b>FERTILIZER</b><br>Avg Return: 461.4%<br>Percentile: 92%", "<b>FERTILIZER</b><br>Avg CAGR: 38.2%<br>Percentile: 83%", "<b>FERTILIZER</b><br>Volatility: 34.3%<br>Percentile: 92%", "<b>FERTILIZER</b><br>Sharpe: 0.76<br>Percentile: 92%", "<b>FERTILIZER</b><br>Beta: 0.92<br>Percentile: 22%", "<b>FERTILIZER</b><br>Max Drawdown: -41.4%<br>Percentile: 11%"], ["<b>COMMERCIAL BANKS</b><br>Avg Return: 420.3%<br>Percentile: 89%", "<b>COMMERCIAL BANKS</b><br>Avg CAGR: 28.3%<br>Percentile: 78%", "<b>COMMERCIAL BANKS</b><br>Volatility: 43.8%<br>Percentile: 81%", "<b>COMMERCIAL BANKS</b><br>Sharpe: 0.42<br>Percentile: 81%", "<b>COMMERCIAL BANKS</b><br>Beta: 0.85<br>Percentile: 25%", "<b>COMMERCIAL BANKS</b><br>Max Drawdown: -47.2%<br>Percentile: 22%"], ["<b>PROPERTY</b><br>Avg Return: 351.2%<br>Percentile: 86%", "<b>PROPERTY</b><br>Avg CAGR: 39.1%<br>Percentile: 86%", "<b>PROPERTY</b><br>Volatility: 64.5%<br>Percentile: 14%", "<b>PROPERTY</b><br>Sharpe: 0.46<br>Percentile: 86%", "<b>PROPERTY</b><br>Beta: 0.76<br>Percentile: 50%", "<b>PROPERTY</b><br>Max Drawdown: -60.4%<br>Percentile: 64%"], ["<b>LEATHER & TANNERIES</b><br>Avg Return: 301.3%<br>Percentile: 83%", "<b>LEATHER & TANNERIES</b><br>Avg CAGR: 22.7%<br>Percentile: 72%", "<b>LEATHER & TANNERIES</b><br>Volatility: 61.0%<br>Percentile: 25%", "<b>LEATHER & TANNERIES</b><br>Sharpe: 0.11<br>Percentile: 64%", "<b>LEATHER & TANNERIES</b><br>Beta: 0.47<br>Percentile: 75%", "<b>LEATHER & TANNERIES</b><br>Max Drawdown: -64.6%<br>Percentile: 78%"], ["<b>TEXTILE SPINNING</b><br>Avg Return: 277.6%<br>Percentile: 81%", "<b>TEXTILE SPINNING</b><br>Avg CAGR: 51.7%<br>Percentile: 92%", "<b>TEXTILE SPINNING</b><br>Volatility: 71.7%<br>Percentile: 8%", "<b>TEXTILE SPINNING</b><br>Sharpe: 0.59<br>Percentile: 89%", "<b>TEXTILE SPINNING</b><br>Beta: 0.54<br>Percentile: 64%", "<b>TEXTILE SPINNING</b><br>Max Drawdown: -54.6%<br>Percentile: 42%"], ["<b>CEMENT</b><br>Avg Return: 232.2%<br>Percentile: 78%", "<b>CEMENT</b><br>Avg CAGR: 21.5%<br>Percentile: 64%", "<b>CEMENT</b><br>Volatility: 46.5%<br>Percentile: 69%", "<b>CEMENT</b><br>Sharpe: 0.25<br>Percentile: 75%", "<b>CEMENT</b><br>Beta: 1.16<br>Percentile: 8%", "<b>CEMENT</b><br>Max Drawdown: -60.1%<br>Percentile: 58%"], ["<b>SUGAR & ALLIED INDUSTRIES</b><br>Avg Return: 202.0%<br>Percentile: 75%", "<b>SUGAR & ALLIED INDUSTRIES</b><br>Avg CAGR: 16.0%<br>Percentile: 50%", "<b>SUGAR & ALLIED INDUSTRIES</b><br>Volatility: 62.1%<br>Percentile: 22%", "<b>SUGAR & ALLIED INDUSTRIES</b><br>Sharpe: 0.10<br>Percentile: 61%", "<b>SUGAR & ALLIED INDUSTRIES</b><br>Beta: 0.39<br>Percentile: 94%", "<b>SUGAR & ALLIED INDUSTRIES</b><br>Max Drawdown: -53.9%<br>Percentile: 39%"], ["<b>TECHNOLOGY & COMMUNICATION</b><br>Avg Return: 188.5%<br>Percentile: 72%", "<b>TECHNOLOGY & COMMUNICATION</b><br>Avg CAGR: 36.1%<br>Percentile: 81%", "<b>TECHNOLOGY & COMMUNICATION</b><br>Volatility: 52.9%<br>Percentile: 44%", "<b>TECHNOLOGY & COMMUNICATION</b><br>Sharpe: 0.44<br>Percentile: 83%", "<b>TECHNOLOGY & COMMUNICATION</b><br>Beta: 1.11<br>Percentile: 11%", "<b>TECHNOLOGY & COMMUNICATION</b><br>Max Drawdown: -62.5%<br>Percentile: 75%"], ["<b>POWER GENERATION & DISTRIBUTION</b><br>Avg Return: 184.9%<br>Percentile: 69%", "<b>POWER GENERATION & DISTRIBUTION</b><br>Avg CAGR: 15.7%<br>Percentile: 47%", "<b>POWER GENERATION & DISTRIBUTION</b><br>Volatility: 53.1%<br>Percentile: 42%", "<b>POWER GENERATION & DISTRIBUTION</b><br>Sharpe: 0.02<br>Percentile: 39%", "<b>POWER GENERATION & DISTRIBUTION</b><br>Beta: 0.74<br>Percentile: 53%", "<b>POWER GENERATION & DISTRIBUTION</b><br>Max Drawdown: -60.7%<br>Percentile: 69%"], ["<b>MODARABAS</b><br>Avg Return: 179.8%<br>Percentile: 67%", "<b>MODARABAS</b><br>Avg CAGR: 19.4%<br>Percentile: 53%", "<b>MODARABAS</b><br>Volatility: 76.1%<br>Percentile: 6%", "<b>MODARABAS</b><br>Sharpe: 0.07<br>Percentile: 56%", "<b>MODARABAS</b><br>Beta: 0.43<br>Percentile: 83%", "<b>MODARABAS</b><br>Max Drawdown: -53.7%<br>Percentile: 36%"], ["<b>AUTOMOBILE ASSEMBLER</b><br>Avg Return: 173.0%<br>Percentile: 64%", "<b>AUTOMOBILE ASSEMBLER</b><br>Avg CAGR: 14.5%<br>Percentile: 44%", "<b>AUTOMOBILE ASSEMBLER</b><br>Volatility: 43.8%<br>Percentile: 83%", "<b>AUTOMOBILE ASSEMBLER</b><br>Sharpe: 0.05<br>Percentile: 44%", "<b>AUTOMOBILE ASSEMBLER</b><br>Beta: 1.17<br>Percentile: 6%", "<b>AUTOMOBILE ASSEMBLER</b><br>Max Drawdown: -66.0%<br>Percentile: 86%"], ["<b>MISCELLANEOUS</b><br>Avg Return: 131.7%<br>Percentile: 61%", "<b>MISCELLANEOUS</b><br>Avg CAGR: 22.2%<br>Percentile: 69%", "<b>MISCELLANEOUS</b><br>Volatility: 71.2%<br>Percentile: 11%", "<b>MISCELLANEOUS</b><br>Sharpe: 0.05<br>Percentile: 42%", "<b>MISCELLANEOUS</b><br>Beta: 0.47<br>Percentile: 72%", "<b>MISCELLANEOUS</b><br>Max Drawdown: -53.6%<br>Percentile: 33%"], ["<b>PHARMACEUTICALS</b><br>Avg Return: 112.2%<br>Percentile: 58%", "<b>PHARMACEUTICALS</b><br>Avg CAGR: 20.8%<br>Percentile: 61%", "<b>PHARMACEUTICALS</b><br>Volatility: 46.0%<br>Percentile: 72%", "<b>PHARMACEUTICALS</b><br>Sharpe: 0.16<br>Percentile: 69%", "<b>PHARMACEUTICALS</b><br>Beta: 0.83<br>Percentile: 28%", "<b>PHARMACEUTICALS</b><br>Max Drawdown: -62.1%<br>Percentile: 72%"], ["<b>VANASPATI & ALLIED INDUSTRIES</b><br>Avg Return: 108.9%<br>Percentile: 56%", "<b>VANASPATI & ALLIED INDUSTRIES</b><br>Avg CAGR: 9.1%<br>Percentile: 25%", "<b>VANASPATI & ALLIED INDUSTRIES</b><br>Volatility: 42.1%<br>Percentile: 86%", "<b>VANASPATI & ALLIED INDUSTRIES</b><br>Sharpe: 0.00<br>Percentile: 31%", "<b>VANASPATI & ALLIED INDUSTRIES</b><br>Beta: 0.41<br>Percentile: 89%", "<b>VANASPATI & ALLIED INDUSTRIES</b><br>Max Drawdown: -45.8%<br>Percentile: 14%"], ["<b>TEXTILE COMPOSITE</b><br>Avg Return: 99.1%<br>Percentile: 53%", "<b>TEXTILE COMPOSITE</b><br>Avg CAGR: 20.3%<br>Percentile: 58%", "<b>TEXTILE COMPOSITE</b><br>Volatility: 52.6%<br>Percentile: 47%", "<b>TEXTILE COMPOSITE</b><br>Sharpe: 0.16<br>Percentile: 67%", "<b>TEXTILE COMPOSITE</b><br>Beta: 0.42<br>Percentile: 86%", "<b>TEXTILE COMPOSITE</b><br>Max Drawdown: -46.2%<br>Percentile: 17%"], ["<b>CHEMICAL</b><br>Avg Return: 99.1%<br>Percentile: 50%", "<b>CHEMICAL</b><br>Avg CAGR: 19.4%<br>Percentile: 56%", "<b>CHEMICAL</b><br>Volatility: 48.5%<br>Percentile: 58%", "<b>CHEMICAL</b><br>Sharpe: 0.05<br>Percentile: 47%", "<b>CHEMICAL</b><br>Beta: 0.77<br>Percentile: 39%", "<b>CHEMICAL</b><br>Max Drawdown: -60.3%<br>Percentile: 61%"], ["<b>OIL & GAS EXPLORATION COMPANIES</b><br>Avg Return: 89.4%<br>Percentile: 47%", "<b>OIL & GAS EXPLORATION COMPANIES</b><br>Avg CAGR: 9.8%<br>Percentile: 28%", "<b>OIL & GAS EXPLORATION COMPANIES</b><br>Volatility: 48.5%<br>Percentile: 61%", "<b>OIL & GAS EXPLORATION COMPANIES</b><br>Sharpe: 0.08<br>Percentile: 58%", "<b>OIL & GAS EXPLORATION COMPANIES</b><br>Beta: 1.10<br>Percentile: 14%", "<b>OIL & GAS EXPLORATION COMPANIES</b><br>Max Drawdown: -50.9%<br>Percentile: 31%"], ["<b>TRANSPORT</b><br>Avg Return: 89.1%<br>Percentile: 44%", "<b>TRANSPORT</b><br>Avg CAGR: -2.8%<br>Percentile: 8%", "<b>TRANSPORT</b><br>Volatility: 50.2%<br>Percentile: 53%", "<b>TRANSPORT</b><br>Sharpe: -0.26<br>Percentile: 8%", "<b>TRANSPORT</b><br>Beta: 0.79<br>Percentile: 33%", "<b>TRANSPORT</b><br>Max Drawdown: -58.3%<br>Percentile: 50%"], ["<b>GLASS & CERAMICS</b><br>Avg Return: 86.9%<br>Percentile: 42%", "<b>GLASS & CERAMICS</b><br>Avg CAGR: 8.7%<br>Percentile: 19%", "<b>GLASS & CERAMICS</b><br>Volatility: 44.1%<br>Percentile: 75%", "<b>GLASS & CERAMICS</b><br>Sharpe: -0.08<br>Percentile: 19%", "<b>GLASS & CERAMICS</b><br>Beta: 0.76<br>Percentile: 42%", "<b>GLASS & CERAMICS</b><br>Max Drawdown: -56.0%<br>Percentile: 47%"], ["<b>FOOD & PERSONAL CARE PRODUCTS</b><br>Avg Return: 77.2%<br>Percentile: 39%", "<b>FOOD & PERSONAL CARE PRODUCTS</b><br>Avg CAGR: 11.5%<br>Percentile: 39%", "<b>FOOD & PERSONAL CARE PRODUCTS</b><br>Volatility: 47.3%<br>Percentile: 67%", "<b>FOOD & PERSONAL CARE PRODUCTS</b><br>Sharpe: 0.01<br>Percentile: 33%", "<b>FOOD & PERSONAL CARE PRODUCTS</b><br>Beta: 0.78<br>Percentile: 36%", "<b>FOOD & PERSONAL CARE PRODUCTS</b><br>Max Drawdown: -54.8%<br>Percentile: 44%"], ["<b>SYNTHETIC & RAYON</b><br>Avg Return: 76.9%<br>Percentile: 36%", "<b>SYNTHETIC & RAYON</b><br>Avg CAGR: 240.5%<br>Percentile: 97%", "<b>SYNTHETIC & RAYON</b><br>Volatility: 39.3%<br>Percentile: 89%", "<b>SYNTHETIC & RAYON</b><br>Sharpe: 5.49<br>Percentile: 97%", "<b>SYNTHETIC & RAYON</b><br>Beta: 0.40<br>Percentile: 92%", "<b>SYNTHETIC & RAYON</b><br>Max Drawdown: -36.9%<br>Percentile: 3%"], ["<b>CLOSE - END MUTUAL FUND</b><br>Avg Return: 71.3%<br>Percentile: 33%", "<b>CLOSE - END MUTUAL FUND</b><br>Avg CAGR: 9.9%<br>Percentile: 31%", "<b>CLOSE - END MUTUAL FUND</b><br>Volatility: 50.7%<br>Percentile: 50%", "<b>CLOSE - END MUTUAL FUND</b><br>Sharpe: 0.06<br>Percentile: 53%", "<b>CLOSE - END MUTUAL FUND</b><br>Beta: 0.53<br>Percentile: 67%", "<b>CLOSE - END MUTUAL FUND</b><br>Max Drawdown: -39.4%<br>Percentile: 6%"], ["<b>INSURANCE</b><br>Avg Return: 69.8%<br>Percentile: 31%", "<b>INSURANCE</b><br>Avg CAGR: 13.7%<br>Percentile: 42%", "<b>INSURANCE</b><br>Volatility: 53.4%<br>Percentile: 39%", "<b>INSURANCE</b><br>Sharpe: 0.05<br>Percentile: 50%", "<b>INSURANCE</b><br>Beta: 0.47<br>Percentile: 78%", "<b>INSURANCE</b><br>Max Drawdown: -47.0%<br>Percentile: 19%"], ["<b>OIL & GAS MARKETING COMPANIES</b><br>Avg Return: 69.7%<br>Percentile: 28%", "<b>OIL & GAS MARKETING COMPANIES</b><br>Avg CAGR: 10.1%<br>Percentile: 33%", "<b>OIL & GAS MARKETING COMPANIES</b><br>Volatility: 44.1%<br>Percentile: 78%", "<b>OIL & GAS MARKETING COMPANIES</b><br>Sharpe: -0.04<br>Percentile: 22%", "<b>OIL & GAS MARKETING COMPANIES</b><br>Beta: 1.18<br>Percentile: 3%", "<b>OIL & GAS MARKETING COMPANIES</b><br>Max Drawdown: -60.6%<br>Percentile: 67%"], ["<b>TEXTILE WEAVING</b><br>Avg Return: 66.0%<br>Percentile: 25%", "<b>TEXTILE WEAVING</b><br>Avg CAGR: 8.7%<br>Percentile: 22%", "<b>TEXTILE WEAVING</b><br>Volatility: 64.4%<br>Percentile: 17%", "<b>TEXTILE WEAVING</b><br>Sharpe: -0.01<br>Percentile: 28%", "<b>TEXTILE WEAVING</b><br>Beta: 0.58<br>Percentile: 61%", "<b>TEXTILE WEAVING</b><br>Max Drawdown: -48.0%<br>Percentile: 25%"], ["<b>CABLE & ELECTRICAL GOODS</b><br>Avg Return: 62.9%<br>Percentile: 22%", "<b>CABLE & ELECTRICAL GOODS</b><br>Avg CAGR: 10.4%<br>Percentile: 36%", "<b>CABLE & ELECTRICAL GOODS</b><br>Volatility: 54.8%<br>Percentile: 31%", "<b>CABLE & ELECTRICAL GOODS</b><br>Sharpe: -0.03<br>Percentile: 25%", "<b>CABLE & ELECTRICAL GOODS</b><br>Beta: 0.93<br>Percentile: 19%", "<b>CABLE & ELECTRICAL GOODS</b><br>Max Drawdown: -59.6%<br>Percentile: 56%"], ["<b>REAL ESTATE INVESTMENT TRUST</b><br>Avg Return: 60.4%<br>Percentile: 19%", "<b>REAL ESTATE INVESTMENT TRUST</b><br>Avg CAGR: -2.9%<br>Percentile: 3%", "<b>REAL ESTATE INVESTMENT TRUST</b><br>Volatility: 30.7%<br>Percentile: 97%", "<b>REAL ESTATE INVESTMENT TRUST</b><br>Sharpe: -0.35<br>Percentile: 3%", "<b>REAL ESTATE INVESTMENT TRUST</b><br>Beta: 0.32<br>Percentile: 97%", "<b>REAL ESTATE INVESTMENT TRUST</b><br>Max Drawdown: -24.0%<br>Percentile: 0%"], ["<b>REFINERY</b><br>Avg Return: 54.5%<br>Percentile: 17%", "<b>REFINERY</b><br>Avg CAGR: -1.2%<br>Percentile: 11%", "<b>REFINERY</b><br>Volatility: 47.6%<br>Percentile: 64%", "<b>REFINERY</b><br>Sharpe: -0.23<br>Percentile: 14%", "<b>REFINERY</b><br>Beta: 1.74<br>Percentile: 0%", "<b>REFINERY</b><br>Max Drawdown: -66.8%<br>Percentile: 89%"], ["<b>LEASING COMPANIES</b><br>Avg Return: 35.2%<br>Percentile: 14%", "<b>LEASING COMPANIES</b><br>Avg CAGR: 56.0%<br>Percentile: 94%", "<b>LEASING COMPANIES</b><br>Volatility: 76.5%<br>Percentile: 3%", "<b>LEASING COMPANIES</b><br>Sharpe: 0.85<br>Percentile: 94%", "<b>LEASING COMPANIES</b><br>Beta: 0.44<br>Percentile: 81%", "<b>LEASING COMPANIES</b><br>Max Drawdown: -40.5%<br>Percentile: 8%"], ["<b>WOOLLEN</b><br>Avg Return: 32.1%<br>Percentile: 11%", "<b>WOOLLEN</b><br>Avg CAGR: 5.7%<br>Percentile: 17%", "<b>WOOLLEN</b><br>Volatility: 54.5%<br>Percentile: 33%", "<b>WOOLLEN</b><br>Sharpe: -0.10<br>Percentile: 17%", "<b>WOOLLEN</b><br>Beta: 0.76<br>Percentile: 47%", "<b>WOOLLEN</b><br>Max Drawdown: -64.9%<br>Percentile: 81%"], ["<b>ENGINEERING</b><br>Avg Return: 22.0%<br>Percentile: 8%", "<b>ENGINEERING</b><br>Avg CAGR: 4352.7%<br>Percentile: 100%", "<b>ENGINEERING</b><br>Volatility: 56.2%<br>Percentile: 28%", "<b>ENGINEERING</b><br>Sharpe: 43.07<br>Percentile: 100%", "<b>ENGINEERING</b><br>Beta: 0.83<br>Percentile: 31%", "<b>ENGINEERING</b><br>Max Drawdown: -68.0%<br>Percentile: 92%"], ["<b>PAPER, BOARD & PACKAGING</b><br>Avg Return: 11.5%<br>Percentile: 6%", "<b>PAPER, BOARD & PACKAGING</b><br>Avg CAGR: 0.5%<br>Percentile: 14%", "<b>PAPER, BOARD & PACKAGING</b><br>Volatility: 34.1%<br>Percentile: 94%", "<b>PAPER, BOARD & PACKAGING</b><br>Sharpe: -0.25<br>Percentile: 11%", "<b>PAPER, BOARD & PACKAGING</b><br>Beta: 0.70<br>Percentile: 58%", "<b>PAPER, BOARD & PACKAGING</b><br>Max Drawdown: -49.9%<br>Percentile: 28%"], ["<b>TOBACCO</b><br>Avg Return: -11.4%<br>Percentile: 3%", "<b>TOBACCO</b><br>Avg CAGR: -2.8%<br>Percentile: 6%", "<b>TOBACCO</b><br>Volatility: 49.9%<br>Percentile: 56%", "<b>TOBACCO</b><br>Sharpe: -0.28<br>Percentile: 6%", "<b>TOBACCO</b><br>Beta: 0.51<br>Percentile: 69%", "<b>TOBACCO</b><br>Max Drawdown: -71.8%<br>Percentile: 94%"]], "hovertemplate": "%{customdata}<extra></extra>", "x": ["Return", "CAGR", "Vol", "Sharpe", "Beta", "Max DD"], "y": ["INV. BANKS / INV. COS. \u2026", "AUTOMOBILE PARTS & ACCE\u2026", "JUTE", "FERTILIZER", "COMMERCIAL BANKS", "PROPERTY", "LEATHER & TANNERIES", "TEXTILE SPINNING", "CEMENT", "SUGAR & ALLIED INDUSTRIES", "TECHNOLOGY & COMMUNICATION", "POWER GENERATION & DIST\u2026", "MODARABAS", "AUTOMOBILE ASSEMBLER", "MISCELLANEOUS", "PHARMACEUTICALS", "VANASPATI & ALLIED INDU\u2026", "TEXTILE COMPOSITE", "CHEMICAL", "OIL & GAS EXPLORATION C\u2026", "TRANSPORT", "GLASS & CERAMICS", "FOOD & PERSONAL CARE PR\u2026", "SYNTHETIC & RAYON", "CLOSE - END MUTUAL FUND", "INSURANCE", "OIL & GAS MARKETING COM\u2026", "TEXTILE WEAVING", "CABLE & ELECTRICAL GOODS", "REAL ESTATE INVESTMENT \u2026", "REFINERY", "LEASING COMPANIES", "WOOLLEN", "ENGINEERING", "PAPER, BOARD & PACKAGING", "TOBACCO"], "z": [[1.0, 0.75, 0.19444444444444442, 0.7222222222222222, 0.5555555555555556, 0.5277777777777778], [0.9722222222222222, 0.6666666666666666, 0.36111111111111116, 0.3611111111111111, 0.16666666666666663, 0.9722222222222222], [0.9444444444444444, 0.8888888888888888, 0.0, 0.7777777777777778, 0.4444444444444444, 0.8333333333333334], [0.9166666666666666, 0.8333333333333334, 0.9166666666666666, 0.9166666666666666, 0.2222222222222222, 0.11111111111111116], [0.8888888888888888, 0.7777777777777778, 0.8055555555555556, 0.8055555555555556, 0.25, 0.2222222222222222], [0.8611111111111112, 0.8611111111111112, 0.13888888888888884, 0.8611111111111112, 0.5, 0.6388888888888888], [0.8333333333333334, 0.7222222222222222, 0.25, 0.6388888888888888, 0.75, 0.7777777777777778], [0.8055555555555556, 0.9166666666666666, 0.08333333333333337, 0.8888888888888888, 0.6388888888888888, 0.41666666666666663], [0.7777777777777778, 0.6388888888888888, 0.6944444444444444, 0.75, 0.08333333333333337, 0.5833333333333333], [0.75, 0.5, 0.2222222222222222, 0.6111111111111112, 0.9444444444444444, 0.38888888888888884], [0.7222222222222222, 0.8055555555555556, 0.4444444444444444, 0.8333333333333334, 0.11111111111111116, 0.75], [0.6944444444444444, 0.4722222222222222, 0.41666666666666663, 0.3888888888888889, 0.5277777777777778, 0.6944444444444444], [0.6666666666666666, 0.5277777777777778, 0.05555555555555558, 0.5555555555555556, 0.8333333333333334, 0.36111111111111116], [0.6388888888888888, 0.4444444444444444, 0.8333333333333334, 0.4444444444444444, 0.05555555555555558, 0.8611111111111112], [0.6111111111111112, 0.6944444444444444, 0.11111111111111116, 0.4166666666666667, 0.7222222222222222, 0.33333333333333337], [0.5833333333333334, 0.6111111111111112, 0.7222222222222222, 0.6944444444444444, 0.2777777777777778, 0.7222222222222222], [0.5555555555555556, 0.25, 0.8611111111111112, 0.3055555555555556, 0.8888888888888888, 0.13888888888888884], [0.5277777777777778, 0.5833333333333334, 0.4722222222222222, 0.6666666666666666, 0.8611111111111112, 0.16666666666666663], [0.5, 0.5555555555555556, 0.5833333333333333, 0.4722222222222222, 0.38888888888888884, 0.6111111111111112], [0.4722222222222222, 0.2777777777777778, 0.6111111111111112, 0.5833333333333334, 0.13888888888888884, 0.3055555555555556], [0.4444444444444444, 0.08333333333333333, 0.5277777777777778, 0.08333333333333333, 0.33333333333333337, 0.5], [0.4166666666666667, 0.19444444444444445, 0.75, 0.19444444444444445, 0.41666666666666663, 0.4722222222222222], [0.3888888888888889, 0.3888888888888889, 0.6666666666666667, 0.3333333333333333, 0.36111111111111116, 0.4444444444444444], [0.3611111111111111, 0.9722222222222222, 0.8888888888888888, 0.9722222222222222, 0.9166666666666666, 0.02777777777777779], [0.3333333333333333, 0.3055555555555556, 0.5, 0.5277777777777778, 0.6666666666666667, 0.05555555555555558], [0.3055555555555556, 0.4166666666666667, 0.38888888888888884, 0.5, 0.7777777777777778, 0.19444444444444442], [0.2777777777777778, 0.3333333333333333, 0.7777777777777778, 0.2222222222222222, 0.02777777777777779, 0.6666666666666667], [0.25, 0.2222222222222222, 0.16666666666666663, 0.2777777777777778, 0.6111111111111112, 0.25], [0.2222222222222222, 0.3611111111111111, 0.3055555555555556, 0.25, 0.19444444444444442, 0.5555555555555556], [0.19444444444444445, 0.027777777777777776, 0.9722222222222222, 0.027777777777777776, 0.9722222222222222, 0.0], [0.16666666666666666, 0.1111111111111111, 0.6388888888888888, 0.1388888888888889, 0.0, 0.8888888888888888], [0.1388888888888889, 0.9444444444444444, 0.02777777777777779, 0.9444444444444444, 0.8055555555555556, 0.08333333333333337], [0.1111111111111111, 0.16666666666666666, 0.33333333333333337, 0.16666666666666666, 0.4722222222222222, 0.8055555555555556], [0.08333333333333333, 1.0, 0.2777777777777778, 1.0, 0.3055555555555556, 0.9166666666666666], [0.05555555555555555, 0.1388888888888889, 0.9444444444444444, 0.1111111111111111, 0.5833333333333333, 0.2777777777777778], [0.027777777777777776, 0.05555555555555555, 0.5555555555555556, 0.05555555555555555, 0.6944444444444444, 0.9444444444444444]], "zmax": 1, "zmin": 0, "type": "heatmap"}], "layout": {"template": {"data": {"histogram2dcontour": [{"type": "histogram2dcontour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "choropleth": [{"type": "choropleth", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "histogram2d": [{"type": "histogram2d", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "heatmap": [{"type": "heatmap", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "contourcarpet": [{"type": "contourcarpet", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "contour": [{"type": "contour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "surface": [{"type": "surface", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "mesh3d": [{"type": "mesh3d", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "scatter": [{"fillpattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}, "type": "scatter"}], "parcoords": [{"type": "parcoords", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolargl": [{"type": "scatterpolargl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "bar": [{"error_x": {"color": "#2a3f5f"}, "error_y": {"color": "#2a3f5f"}, "marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "bar"}], "scattergeo": [{"type": "scattergeo", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolar": [{"type": "scatterpolar", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "histogram": [{"marker": {"pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "histogram"}], "scattergl": [{"type": "scattergl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatter3d": [{"type": "scatter3d", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermap": [{"type": "scattermap", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermapbox": [{"type": "scattermapbox", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterternary": [{"type": "scatterternary", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattercarpet": [{"type": "scattercarpet", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "carpet": [{"aaxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "baxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "type": "carpet"}], "table": [{"cells": {"fill": {"color": "#EBF0F8"}, "line": {"color": "white"}}, "header": {"fill": {"color": "#C8D4E3"}, "line": {"color": "white"}}, "type": "table"}], "barpolar": [{"marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "barpolar"}], "pie": [{"automargin": true, "type": "pie"}]}, "layout": {"autotypenumbers": "strict", "colorway": ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"], "font": {"color": "#2a3f5f"}, "hovermode": "closest", "hoverlabel": {"align": "left"}, "paper_bgcolor": "white", "plot_bgcolor": "#E5ECF6", "polar": {"bgcolor": "#E5ECF6", "angularaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "radialaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "ternary": {"bgcolor": "#E5ECF6", "aaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "baxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "caxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "coloraxis": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "colorscale": {"sequential": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "sequentialminus": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "diverging": [[0, "#8e0152"], [0.1, "#c51b7d"], [0.2, "#de77ae"], [0.3, "#f1b6da"], [0.4, "#fde0ef"], [0.5, "#f7f7f7"], [0.6, "#e6f5d0"], [0.7, "#b8e186"], [0.8, "#7fbc41"], [0.9, "#4d9221"], [1, "#276419"]]}, "xaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "yaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "scene": {"xaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "yaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "zaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}}, "shapedefaults": {"line": {"color": "#2a3f5f"}}, "annotationdefaults": {"arrowcolor": "#2a3f5f", "arrowhead": 0, "arrowwidth": 1}, "geo": {"bgcolor": "white", "landcolor": "#E5ECF6", "subunitcolor": "white", "showland": true, "showlakes": true, "lakecolor": "white"}, "title": {"x": 0.05}, "mapbox": {"style": "light"}}}, "title": {"font": {"size": 14}, "text": "<b>Sector Heatmap</b> \u2014 Percentile Rank by Metric (green = better)"}, "font": {"color": "#3a3a3a", "family": "Inter, system-ui, sans-serif", "size": 12}, "margin": {"l": 180, "r": 40, "t": 70, "b": 60}, "xaxis": {"gridcolor": "#eeeeee", "zerolinecolor": "#c0c0c0", "showgrid": false, "linecolor": "#c0c0c0", "linewidth": 1, "mirror": false, "tickfont": {"size": 10}, "side": "top", "tickangle": -25, "zeroline": false}, "yaxis": {"gridcolor": "#eeeeee", "zerolinecolor": "#c0c0c0", "showgrid": false, "separatethousands": true, "linecolor": "#c0c0c0", "linewidth": 1, "mirror": false, "tickfont": {"size": 10}, "autorange": "reversed", "automargin": true}, "legend": {"font": {"size": 11}, "bgcolor": "rgba(255,255,255,0.8)", "bordercolor": "#c0c0c0", "borderwidth": 1}, "hoverlabel": {"font": {"color": "#1a1a1a", "size": 12}, "bgcolor": "#ffffff", "bordercolor": "#c0c0c0"}, "height": 1024, "paper_bgcolor": "rgba(255,255,255,0)", "plot_bgcolor": "#fafafa", "hovermode": "closest"}};
+    Plotly.newPlot('sectorHeatmap', heatmapData.data, heatmapData.layout, {responsive: true, displayModeBar: false});
+
+</script>
+
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+    </script>
+</body>
+</html>

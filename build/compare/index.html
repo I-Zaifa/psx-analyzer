@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Quantitative analysis of 600+ stocks on the Pakistan Stock Exchange. Daily prices, financial metrics, sector breakdowns, and macro indicators from 2010 to 2026.">
+    <meta name="theme-color" content="#CFB53B">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta property="og:title" content="PSX Analyzer">
+    <meta property="og:description" content="Quantitative analysis of 600+ stocks on the Pakistan Stock Exchange. Daily prices, financial metrics, sector breakdowns, and macro indicators.">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="en_US">
+    <title>PSX Analyzer - Compare</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">
+                <svg class="nav-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="32" height="32" rx="0" fill="#CFB53B"/>
+                    <path d="M8 22L12 14L16 18L20 10L24 16" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="24" cy="16" r="2" fill="white"/>
+                </svg>
+                <span>PSX Analyzer</span>
+                <span class="data-date-badge">as of Feb 06, 2026</span>
+            </a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div class="nav-links" id="navLinks">
+                <a href="/" class="nav-link ">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    Dashboard
+                </a>
+                <a href="/screener" class="nav-link ">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Screener
+                </a>
+                <a href="/compare" class="nav-link active">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Compare
+                </a>
+                <a href="/sectors" class="nav-link ">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Sectors
+                </a>
+                <a href="/downloads" class="nav-link ">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Downloads &amp; About
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    
+    <div id="staleBanner" class="stale-banner" aria-live="polite" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="staleBannerMsg"></span>
+    </div>
+    <script>
+    (function () {
+        var asOf = new Date("Feb 06, 2026");
+        if (isNaN(asOf.getTime())) return;
+        var diffDays = (Date.now() - asOf.getTime()) / 86400000;
+        if (diffDays > 4) {
+            var el = document.getElementById('staleBannerMsg');
+            if (el) el.textContent = 'Data as of Feb 06, 2026 "." the automated pipeline runs Mon\u2013Fri at 17:45 PKT.';
+            var banner = document.getElementById('staleBanner');
+            if (banner) banner.style.display = '';
+        }
+    }());
+    </script>
+    
+
+    <main class="main-content">
+        
+<div class="page-header">
+    <h1 class="page-title">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Compare Stocks
+    </h1>
+    <p class="page-subtitle">Side-by-side comparison of up to 5 stocks · Data as of Feb 06, 2026</p>
+</div>
+
+<!-- Selector -->
+<form method="GET" action="/compare" class="compare-selector">
+    <select id="addSymbol" name="addSymbol" style="min-width: 200px;">
+        <option value="">Add a stock...</option>
+        
+        <option value="786">786</option>
+        
+        <option value="AABS">AABS</option>
+        
+        <option value="AAL">AAL</option>
+        
+        <option value="AASM">AASM</option>
+        
+        <option value="AATM">AATM</option>
+        
+        <option value="ABL">ABL</option>
+        
+        <option value="ABOT">ABOT</option>
+        
+        <option value="ABSON">ABSON</option>
+        
+        <option value="ACPL">ACPL</option>
+        
+        <option value="ADAMS">ADAMS</option>
+        
+        <option value="ADMM">ADMM</option>
+        
+        <option value="ADOS">ADOS</option>
+        
+        <option value="AEL">AEL</option>
+        
+        <option value="AGHA">AGHA</option>
+        
+        <option value="AGIC">AGIC</option>
+        
+        <option value="AGIL">AGIL</option>
+        
+        <option value="AGL">AGL</option>
+        
+        <option value="AGP">AGP</option>
+        
+        <option value="AGSML">AGSML</option>
+        
+        <option value="AGTL">AGTL</option>
+        
+        <option value="AHCL">AHCL</option>
+        
+        <option value="AHL">AHL</option>
+        
+        <option value="AHTM">AHTM</option>
+        
+        <option value="AICL">AICL</option>
+        
+        <option value="AIRLINK">AIRLINK</option>
+        
+        <option value="AKBL">AKBL</option>
+        
+        <option value="AKDCL">AKDCL</option>
+        
+        <option value="AKDHL">AKDHL</option>
+        
+        <option value="AKDSL">AKDSL</option>
+        
+        <option value="AKGL">AKGL</option>
+        
+        <option value="ALAC">ALAC</option>
+        
+        <option value="ALIFE">ALIFE</option>
+        
+        <option value="ALNRS">ALNRS</option>
+        
+        <option value="ALTN">ALTN</option>
+        
+        <option value="AMBL">AMBL</option>
+        
+        <option value="AMSL">AMSL</option>
+        
+        <option value="AMTEX">AMTEX</option>
+        
+        <option value="ANL">ANL</option>
+        
+        <option value="ANNT">ANNT</option>
+        
+        <option value="ANSM">ANSM</option>
+        
+        <option value="ANTM">ANTM</option>
+        
+        <option value="APL">APL</option>
+        
+        <option value="APOT">APOT</option>
+        
+        <option value="ARCTM">ARCTM</option>
+        
+        <option value="ARM">ARM</option>
+        
+        <option value="ARPAK">ARPAK</option>
+        
+        <option value="ARPL">ARPL</option>
+        
+        <option value="ARUJ">ARUJ</option>
+        
+        <option value="ASC">ASC</option>
+        
+        <option value="ASHT">ASHT</option>
+        
+        <option value="ASIC">ASIC</option>
+        
+        <option value="ASL">ASL</option>
+        
+        <option value="ASLPS">ASLPS</option>
+        
+        <option value="ASTL">ASTL</option>
+        
+        <option value="ASTM">ASTM</option>
+        
+        <option value="ATBA">ATBA</option>
+        
+        <option value="ATIL">ATIL</option>
+        
+        <option value="ATLH">ATLH</option>
+        
+        <option value="ATRL">ATRL</option>
+        
+        <option value="AVN">AVN</option>
+        
+        <option value="AWTX">AWTX</option>
+        
+        <option value="AWWAL">AWWAL</option>
+        
+        <option value="AZMT">AZMT</option>
+        
+        <option value="BAFL">BAFL</option>
+        
+        <option value="BAFS">BAFS</option>
+        
+        <option value="BAHL">BAHL</option>
+        
+        <option value="BAPL">BAPL</option>
+        
+        <option value="BATA">BATA</option>
+        
+        <option value="BBFL">BBFL</option>
+        
+        <option value="BCL">BCL</option>
+        
+        <option value="BCML">BCML</option>
+        
+        <option value="BECO">BECO</option>
+        
+        <option value="BELA">BELA</option>
+        
+        <option value="BERG">BERG</option>
+        
+        <option value="BFAGRO">BFAGRO</option>
+        
+        <option value="BFBIO">BFBIO</option>
+        
+        <option value="BFMOD">BFMOD</option>
+        
+        <option value="BGL">BGL</option>
+        
+        <option value="BHAT">BHAT</option>
+        
+        <option value="BIFO">BIFO</option>
+        
+        <option value="BIIC">BIIC</option>
+        
+        <option value="BILF">BILF</option>
+        
+        <option value="BIPL">BIPL</option>
+        
+        <option value="BIPLS">BIPLS</option>
+        
+        <option value="BLUEX">BLUEX</option>
+        
+        <option value="BML">BML</option>
+        
+        <option value="BNL">BNL</option>
+        
+        <option value="BNWM">BNWM</option>
+        
+        <option value="BOK">BOK</option>
+        
+        <option value="BOP">BOP</option>
+        
+        <option value="BPL">BPL</option>
+        
+        <option value="BRR">BRR</option>
+        
+        <option value="BRRG">BRRG</option>
+        
+        <option value="BTL">BTL</option>
+        
+        <option value="BUXL">BUXL</option>
+        
+        <option value="BWCL">BWCL</option>
+        
+        <option value="BWHL">BWHL</option>
+        
+        <option value="BYCO">BYCO</option>
+        
+        <option value="CASH">CASH</option>
+        
+        <option value="CCM">CCM</option>
+        
+        <option value="CENI">CENI</option>
+        
+        <option value="CEPB">CEPB</option>
+        
+        <option value="CFL">CFL</option>
+        
+        <option value="CHAS">CHAS</option>
+        
+        <option value="CHBL">CHBL</option>
+        
+        <option value="CHCC">CHCC</option>
+        
+        <option value="CJPL">CJPL</option>
+        
+        <option value="CLCPS">CLCPS</option>
+        
+        <option value="CLOUD">CLOUD</option>
+        
+        <option value="CLOV">CLOV</option>
+        
+        <option value="CLVL">CLVL</option>
+        
+        <option value="CNERGY">CNERGY</option>
+        
+        <option value="COLG">COLG</option>
+        
+        <option value="CPAL">CPAL</option>
+        
+        <option value="CPHL">CPHL</option>
+        
+        <option value="CPPL">CPPL</option>
+        
+        <option value="CRTM">CRTM</option>
+        
+        <option value="CSAP">CSAP</option>
+        
+        <option value="CSIL">CSIL</option>
+        
+        <option value="CTM">CTM</option>
+        
+        <option value="CWSM">CWSM</option>
+        
+        <option value="CYAN">CYAN</option>
+        
+        <option value="DAAG">DAAG</option>
+        
+        <option value="DADX">DADX</option>
+        
+        <option value="DATM">DATM</option>
+        
+        <option value="DAWH">DAWH</option>
+        
+        <option value="DBCI">DBCI</option>
+        
+        <option value="DBSL">DBSL</option>
+        
+        <option value="DCL">DCL</option>
+        
+        <option value="DCR">DCR</option>
+        
+        <option value="DCTL">DCTL</option>
+        
+        <option value="DEL">DEL</option>
+        
+        <option value="DFML">DFML</option>
+        
+        <option value="DFSM">DFSM</option>
+        
+        <option value="DGKC">DGKC</option>
+        
+        <option value="DHPL">DHPL</option>
+        
+        <option value="DIIL">DIIL</option>
+        
+        <option value="DINT">DINT</option>
+        
+        <option value="DKL">DKL</option>
+        
+        <option value="DKTM">DKTM</option>
+        
+        <option value="DLL">DLL</option>
+        
+        <option value="DMC">DMC</option>
+        
+        <option value="DMTM">DMTM</option>
+        
+        <option value="DMTX">DMTX</option>
+        
+        <option value="DNCC">DNCC</option>
+        
+        <option value="DOL">DOL</option>
+        
+        <option value="DSFL">DSFL</option>
+        
+        <option value="DSIL">DSIL</option>
+        
+        <option value="DSL">DSL</option>
+        
+        <option value="DSML">DSML</option>
+        
+        <option value="DWAE">DWAE</option>
+        
+        <option value="DWSM">DWSM</option>
+        
+        <option value="DWTM">DWTM</option>
+        
+        <option value="DYNO">DYNO</option>
+        
+        <option value="ECOP">ECOP</option>
+        
+        <option value="EFERT">EFERT</option>
+        
+        <option value="EFGH">EFGH</option>
+        
+        <option value="EFUG">EFUG</option>
+        
+        <option value="EFUL">EFUL</option>
+        
+        <option value="ELCM">ELCM</option>
+        
+        <option value="ELSM">ELSM</option>
+        
+        <option value="EMCO">EMCO</option>
+        
+        <option value="ENGL">ENGL</option>
+        
+        <option value="ENGRO">ENGRO</option>
+        
+        <option value="ENGROH">ENGROH</option>
+        
+        <option value="EPCL">EPCL</option>
+        
+        <option value="EPCLPS">EPCLPS</option>
+        
+        <option value="EPQL">EPQL</option>
+        
+        <option value="ESBL">ESBL</option>
+        
+        <option value="EWIC">EWIC</option>
+        
+        <option value="EXIDE">EXIDE</option>
+        
+        <option value="FABL">FABL</option>
+        
+        <option value="FAEL">FAEL</option>
+        
+        <option value="FANM">FANM</option>
+        
+        <option value="FASM">FASM</option>
+        
+        <option value="FATIMA">FATIMA</option>
+        
+        <option value="FCCL">FCCL</option>
+        
+        <option value="FCEL">FCEL</option>
+        
+        <option value="FCEPL">FCEPL</option>
+        
+        <option value="FCIBL">FCIBL</option>
+        
+        <option value="FCL">FCL</option>
+        
+        <option value="FCONM">FCONM</option>
+        
+        <option value="FCSC">FCSC</option>
+        
+        <option value="FDIBL">FDIBL</option>
+        
+        <option value="FDPL">FDPL</option>
+        
+        <option value="FECM">FECM</option>
+        
+        <option value="FECTC">FECTC</option>
+        
+        <option value="FEM">FEM</option>
+        
+        <option value="FEROZ">FEROZ</option>
+        
+        <option value="FFBL">FFBL</option>
+        
+        <option value="FFC">FFC</option>
+        
+        <option value="FFL">FFL</option>
+        
+        <option value="FFLM">FFLM</option>
+        
+        <option value="FHAM">FHAM</option>
+        
+        <option value="FIBLM">FIBLM</option>
+        
+        <option value="FIL">FIL</option>
+        
+        <option value="FIM">FIM</option>
+        
+        <option value="FIMM">FIMM</option>
+        
+        <option value="FLYNG">FLYNG</option>
+        
+        <option value="FML">FML</option>
+        
+        <option value="FNBM">FNBM</option>
+        
+        <option value="FNEL">FNEL</option>
+        
+        <option value="FPJM">FPJM</option>
+        
+        <option value="FPRM">FPRM</option>
+        
+        <option value="FRCL">FRCL</option>
+        
+        <option value="FRSM">FRSM</option>
+        
+        <option value="FSWL">FSWL</option>
+        
+        <option value="FTHM">FTHM</option>
+        
+        <option value="FTMM">FTMM</option>
+        
+        <option value="FTSM">FTSM</option>
+        
+        <option value="FUDLM">FUDLM</option>
+        
+        <option value="FZCM">FZCM</option>
+        
+        <option value="GADT">GADT</option>
+        
+        <option value="GAIL">GAIL</option>
+        
+        <option value="GAL">GAL</option>
+        
+        <option value="GAMON">GAMON</option>
+        
+        <option value="GATI">GATI</option>
+        
+        <option value="GATM">GATM</option>
+        
+        <option value="GCIL">GCIL</option>
+        
+        <option value="GCILB">GCILB</option>
+        
+        <option value="GCWL">GCWL</option>
+        
+        <option value="GFIL">GFIL</option>
+        
+        <option value="GGGL">GGGL</option>
+        
+        <option value="GGL">GGL</option>
+        
+        <option value="GHGL">GHGL</option>
+        
+        <option value="GHNI">GHNI</option>
+        
+        <option value="GHNL">GHNL</option>
+        
+        <option value="GIL">GIL</option>
+        
+        <option value="GLAXO">GLAXO</option>
+        
+        <option value="GLOT">GLOT</option>
+        
+        <option value="GLPL">GLPL</option>
+        
+        <option value="GOC">GOC</option>
+        
+        <option value="GRR">GRR</option>
+        
+        <option value="GRYL">GRYL</option>
+        
+        <option value="GSKCH">GSKCH</option>
+        
+        <option value="GSPM">GSPM</option>
+        
+        <option value="GTECH">GTECH</option>
+        
+        <option value="GTECHBR">GTECHBR</option>
+        
+        <option value="GTYR">GTYR</option>
+        
+        <option value="GUSM">GUSM</option>
+        
+        <option value="GUTM">GUTM</option>
+        
+        <option value="GVGL">GVGL</option>
+        
+        <option value="GWLC">GWLC</option>
+        
+        <option value="HABSM">HABSM</option>
+        
+        <option value="HACC">HACC</option>
+        
+        <option value="HADC">HADC</option>
+        
+        <option value="HAEL">HAEL</option>
+        
+        <option value="HAFL">HAFL</option>
+        
+        <option value="HAJT">HAJT</option>
+        
+        <option value="HALEON">HALEON</option>
+        
+        <option value="HASCOL">HASCOL</option>
+        
+        <option value="HATM">HATM</option>
+        
+        <option value="HBL">HBL</option>
+        
+        <option value="HCAR">HCAR</option>
+        
+        <option value="HCL">HCL</option>
+        
+        <option value="HGFA">HGFA</option>
+        
+        <option value="HICL">HICL</option>
+        
+        <option value="HIFA">HIFA</option>
+        
+        <option value="HINO">HINO</option>
+        
+        <option value="HINOON">HINOON</option>
+        
+        <option value="HIRAT">HIRAT</option>
+        
+        <option value="HKKT">HKKT</option>
+        
+        <option value="HMB">HMB</option>
+        
+        <option value="HMIM">HMIM</option>
+        
+        <option value="HMM">HMM</option>
+        
+        <option value="HPL">HPL</option>
+        
+        <option value="HRPL">HRPL</option>
+        
+        <option value="HSM">HSM</option>
+        
+        <option value="HSMCPS">HSMCPS</option>
+        
+        <option value="HSMPSR">HSMPSR</option>
+        
+        <option value="HSPI">HSPI</option>
+        
+        <option value="HTL">HTL</option>
+        
+        <option value="HUBC">HUBC</option>
+        
+        <option value="HUMNL">HUMNL</option>
+        
+        <option value="HUSI">HUSI</option>
+        
+        <option value="HWQS">HWQS</option>
+        
+        <option value="IBFL">IBFL</option>
+        
+        <option value="IBLHL">IBLHL</option>
+        
+        <option value="ICCI">ICCI</option>
+        
+        <option value="ICI">ICI</option>
+        
+        <option value="ICIBL">ICIBL</option>
+        
+        <option value="ICL">ICL</option>
+        
+        <option value="IDRT">IDRT</option>
+        
+        <option value="IDSM">IDSM</option>
+        
+        <option value="IDYM">IDYM</option>
+        
+        <option value="IGIHL">IGIHL</option>
+        
+        <option value="IGIL">IGIL</option>
+        
+        <option value="ILP">ILP</option>
+        
+        <option value="ILTM">ILTM</option>
+        
+        <option value="IMAGE">IMAGE</option>
+        
+        <option value="IML">IML</option>
+        
+        <option value="IMS">IMS</option>
+        
+        <option value="INDU">INDU</option>
+        
+        <option value="INIL">INIL</option>
+        
+        <option value="INKL">INKL</option>
+        
+        <option value="INMF">INMF</option>
+        
+        <option value="IPAK">IPAK</option>
+        
+        <option value="IREIT">IREIT</option>
+        
+        <option value="ISIL">ISIL</option>
+        
+        <option value="ISL">ISL</option>
+        
+        <option value="ITANZ">ITANZ</option>
+        
+        <option value="ITTEFAQ">ITTEFAQ</option>
+        
+        <option value="JATM">JATM</option>
+        
+        <option value="JDMT">JDMT</option>
+        
+        <option value="JDWS">JDWS</option>
+        
+        <option value="JGICL">JGICL</option>
+        
+        <option value="JKSM">JKSM</option>
+        
+        <option value="JLICL">JLICL</option>
+        
+        <option value="JOPP">JOPP</option>
+        
+        <option value="JSBL">JSBL</option>
+        
+        <option value="JSCL">JSCL</option>
+        
+        <option value="JSGCL">JSGCL</option>
+        
+        <option value="JSIL">JSIL</option>
+        
+        <option value="JSML">JSML</option>
+        
+        <option value="JUBS">JUBS</option>
+        
+        <option value="JVDC">JVDC</option>
+        
+        <option value="JVDCPS">JVDCPS</option>
+        
+        <option value="KAKL">KAKL</option>
+        
+        <option value="KAPCO">KAPCO</option>
+        
+        <option value="KASBM">KASBM</option>
+        
+        <option value="KCL">KCL</option>
+        
+        <option value="KEL">KEL</option>
+        
+        <option value="KHSM">KHSM</option>
+        
+        <option value="KHTC">KHTC</option>
+        
+        <option value="KHYT">KHYT</option>
+        
+        <option value="KML">KML</option>
+        
+        <option value="KOHC">KOHC</option>
+        
+        <option value="KOHE">KOHE</option>
+        
+        <option value="KOHP">KOHP</option>
+        
+        <option value="KOHTM">KOHTM</option>
+        
+        <option value="KOIL">KOIL</option>
+        
+        <option value="KOSM">KOSM</option>
+        
+        <option value="KPUS">KPUS</option>
+        
+        <option value="KSBP">KSBP</option>
+        
+        <option value="KSTM">KSTM</option>
+        
+        <option value="KTML">KTML</option>
+        
+        <option value="LCI">LCI</option>
+        
+        <option value="LEUL">LEUL</option>
+        
+        <option value="LIVEN">LIVEN</option>
+        
+        <option value="LMSM">LMSM</option>
+        
+        <option value="LOADS">LOADS</option>
+        
+        <option value="LOTCHEM">LOTCHEM</option>
+        
+        <option value="LPGL">LPGL</option>
+        
+        <option value="LPL">LPL</option>
+        
+        <option value="LSECL">LSECL</option>
+        
+        <option value="LSEFSL">LSEFSL</option>
+        
+        <option value="LSEPL">LSEPL</option>
+        
+        <option value="LSEVL">LSEVL</option>
+        
+        <option value="LUCK">LUCK</option>
+        
+        <option value="MACFL">MACFL</option>
+        
+        <option value="MACTER">MACTER</option>
+        
+        <option value="MARI">MARI</option>
+        
+        <option value="MCB">MCB</option>
+        
+        <option value="MCBAH">MCBAH</option>
+        
+        <option value="MCBIM">MCBIM</option>
+        
+        <option value="MDTL">MDTL</option>
+        
+        <option value="MEBL">MEBL</option>
+        
+        <option value="MEHT">MEHT</option>
+        
+        <option value="MERIT">MERIT</option>
+        
+        <option value="META">META</option>
+        
+        <option value="MFFL">MFFL</option>
+        
+        <option value="MFL">MFL</option>
+        
+        <option value="MFTM">MFTM</option>
+        
+        <option value="MIRKS">MIRKS</option>
+        
+        <option value="MLCF">MLCF</option>
+        
+        <option value="MODAM">MODAM</option>
+        
+        <option value="MOHE">MOHE</option>
+        
+        <option value="MQTM">MQTM</option>
+        
+        <option value="MRNS">MRNS</option>
+        
+        <option value="MSCL">MSCL</option>
+        
+        <option value="MSOT">MSOT</option>
+        
+        <option value="MSOTPS">MSOTPS</option>
+        
+        <option value="MTIL">MTIL</option>
+        
+        <option value="MTL">MTL</option>
+        
+        <option value="MUBT">MUBT</option>
+        
+        <option value="MUGHAL">MUGHAL</option>
+        
+        <option value="MUGHALC">MUGHALC</option>
+        
+        <option value="MUREB">MUREB</option>
+        
+        <option value="MWMP">MWMP</option>
+        
+        <option value="NAFL">NAFL</option>
+        
+        <option value="NAGC">NAGC</option>
+        
+        <option value="NATF">NATF</option>
+        
+        <option value="NATM">NATM</option>
+        
+        <option value="NBP">NBP</option>
+        
+        <option value="NCL">NCL</option>
+        
+        <option value="NCML">NCML</option>
+        
+        <option value="NCPL">NCPL</option>
+        
+        <option value="NESTLE">NESTLE</option>
+        
+        <option value="NETSOL">NETSOL</option>
+        
+        <option value="NEXT">NEXT</option>
+        
+        <option value="NICL">NICL</option>
+        
+        <option value="NINA">NINA</option>
+        
+        <option value="NMFL">NMFL</option>
+        
+        <option value="NML">NML</option>
+        
+        <option value="NONS">NONS</option>
+        
+        <option value="NPL">NPL</option>
+        
+        <option value="NRL">NRL</option>
+        
+        <option value="NRSL">NRSL</option>
+        
+        <option value="NSRM">NSRM</option>
+        
+        <option value="OBOY">OBOY</option>
+        
+        <option value="OCTOPUS">OCTOPUS</option>
+        
+        <option value="OGDC">OGDC</option>
+        
+        <option value="OLPL">OLPL</option>
+        
+        <option value="OLPM">OLPM</option>
+        
+        <option value="OML">OML</option>
+        
+        <option value="ORIXM">ORIXM</option>
+        
+        <option value="ORM">ORM</option>
+        
+        <option value="OTSU">OTSU</option>
+        
+        <option value="PABC">PABC</option>
+        
+        <option value="PACE">PACE</option>
+        
+        <option value="PAEL">PAEL</option>
+        
+        <option value="PAKD">PAKD</option>
+        
+        <option value="PAKL">PAKL</option>
+        
+        <option value="PAKMI">PAKMI</option>
+        
+        <option value="PAKOXY">PAKOXY</option>
+        
+        <option value="PAKQATAR">PAKQATAR</option>
+        
+        <option value="PAKRI">PAKRI</option>
+        
+        <option value="PAKT">PAKT</option>
+        
+        <option value="PASL">PASL</option>
+        
+        <option value="PASM">PASM</option>
+        
+        <option value="PCAL">PCAL</option>
+        
+        <option value="PECO">PECO</option>
+        
+        <option value="PGLC">PGLC</option>
+        
+        <option value="PHDL">PHDL</option>
+        
+        <option value="PIAA">PIAA</option>
+        
+        <option value="PIAB">PIAB</option>
+        
+        <option value="PIAHCLA">PIAHCLA</option>
+        
+        <option value="PIAHCLB">PIAHCLB</option>
+        
+        <option value="PIBTL">PIBTL</option>
+        
+        <option value="PICL">PICL</option>
+        
+        <option value="PICT">PICT</option>
+        
+        <option value="PIL">PIL</option>
+        
+        <option value="PIM">PIM</option>
+        
+        <option value="PINL">PINL</option>
+        
+        <option value="PIOC">PIOC</option>
+        
+        <option value="PKGI">PKGI</option>
+        
+        <option value="PKGP">PKGP</option>
+        
+        <option value="PKGS">PKGS</option>
+        
+        <option value="PMI">PMI</option>
+        
+        <option value="PMPK">PMPK</option>
+        
+        <option value="PMRS">PMRS</option>
+        
+        <option value="PNSC">PNSC</option>
+        
+        <option value="POL">POL</option>
+        
+        <option value="POML">POML</option>
+        
+        <option value="POWER">POWER</option>
+        
+        <option value="POWERPS">POWERPS</option>
+        
+        <option value="PPL">PPL</option>
+        
+        <option value="PPP">PPP</option>
+        
+        <option value="PPVC">PPVC</option>
+        
+        <option value="PREMA">PREMA</option>
+        
+        <option value="PRET">PRET</option>
+        
+        <option value="PRIB">PRIB</option>
+        
+        <option value="PRIC">PRIC</option>
+        
+        <option value="PRL">PRL</option>
+        
+        <option value="PRWM">PRWM</option>
+        
+        <option value="PSEL">PSEL</option>
+        
+        <option value="PSMC">PSMC</option>
+        
+        <option value="PSO">PSO</option>
+        
+        <option value="PSX">PSX</option>
+        
+        <option value="PSYL">PSYL</option>
+        
+        <option value="PTC">PTC</option>
+        
+        <option value="PTL">PTL</option>
+        
+        <option value="PUDF">PUDF</option>
+        
+        <option value="QTECH">QTECH</option>
+        
+        <option value="QUET">QUET</option>
+        
+        <option value="QUICE">QUICE</option>
+        
+        <option value="RAVT">RAVT</option>
+        
+        <option value="RCML">RCML</option>
+        
+        <option value="REDCO">REDCO</option>
+        
+        <option value="REGAL">REGAL</option>
+        
+        <option value="REWM">REWM</option>
+        
+        <option value="RICL">RICL</option>
+        
+        <option value="RMPL">RMPL</option>
+        
+        <option value="RPL">RPL</option>
+        
+        <option value="RUBY">RUBY</option>
+        
+        <option value="RUPL">RUPL</option>
+        
+        <option value="SAIF">SAIF</option>
+        
+        <option value="SALT">SALT</option>
+        
+        <option value="SANE">SANE</option>
+        
+        <option value="SANSM">SANSM</option>
+        
+        <option value="SAPL">SAPL</option>
+        
+        <option value="SAPT">SAPT</option>
+        
+        <option value="SARC">SARC</option>
+        
+        <option value="SASML">SASML</option>
+        
+        <option value="SAZEW">SAZEW</option>
+        
+        <option value="SBL">SBL</option>
+        
+        <option value="SCBPL">SCBPL</option>
+        
+        <option value="SCHT">SCHT</option>
+        
+        <option value="SCL">SCL</option>
+        
+        <option value="SDOT">SDOT</option>
+        
+        <option value="SEARL">SEARL</option>
+        
+        <option value="SEL">SEL</option>
+        
+        <option value="SEPL">SEPL</option>
+        
+        <option value="SERF">SERF</option>
+        
+        <option value="SERT">SERT</option>
+        
+        <option value="SFAT">SFAT</option>
+        
+        <option value="SFL">SFL</option>
+        
+        <option value="SGABL">SGABL</option>
+        
+        <option value="SGF">SGF</option>
+        
+        <option value="SGPL">SGPL</option>
+        
+        <option value="SHCI">SHCI</option>
+        
+        <option value="SHCM">SHCM</option>
+        
+        <option value="SHDT">SHDT</option>
+        
+        <option value="SHEL">SHEL</option>
+        
+        <option value="SHEZ">SHEZ</option>
+        
+        <option value="SHFA">SHFA</option>
+        
+        <option value="SHJS">SHJS</option>
+        
+        <option value="SHNI">SHNI</option>
+        
+        <option value="SHSML">SHSML</option>
+        
+        <option value="SIBL">SIBL</option>
+        
+        <option value="SICL">SICL</option>
+        
+        <option value="SIEM">SIEM</option>
+        
+        <option value="SILK">SILK</option>
+        
+        <option value="SINDM">SINDM</option>
+        
+        <option value="SITC">SITC</option>
+        
+        <option value="SKRS">SKRS</option>
+        
+        <option value="SLCL">SLCL</option>
+        
+        <option value="SLGL">SLGL</option>
+        
+        <option value="SLL">SLL</option>
+        
+        <option value="SLYT">SLYT</option>
+        
+        <option value="SMBL">SMBL</option>
+        
+        <option value="SMCPL">SMCPL</option>
+        
+        <option value="SML">SML</option>
+        
+        <option value="SMTM">SMTM</option>
+        
+        <option value="SNAI">SNAI</option>
+        
+        <option value="SNBL">SNBL</option>
+        
+        <option value="SNGP">SNGP</option>
+        
+        <option value="SPCL">SPCL</option>
+        
+        <option value="SPEL">SPEL</option>
+        
+        <option value="SPL">SPL</option>
+        
+        <option value="SPLC">SPLC</option>
+        
+        <option value="SPWL">SPWL</option>
+        
+        <option value="SRR">SRR</option>
+        
+        <option value="SRVI">SRVI</option>
+        
+        <option value="SSGC">SSGC</option>
+        
+        <option value="SSIC">SSIC</option>
+        
+        <option value="SSML">SSML</option>
+        
+        <option value="SSOM">SSOM</option>
+        
+        <option value="STCL">STCL</option>
+        
+        <option value="STJT">STJT</option>
+        
+        <option value="STL">STL</option>
+        
+        <option value="STML">STML</option>
+        
+        <option value="STPL">STPL</option>
+        
+        <option value="STYLERS">STYLERS</option>
+        
+        <option value="SUHJ">SUHJ</option>
+        
+        <option value="SURAJ">SURAJ</option>
+        
+        <option value="SURC">SURC</option>
+        
+        <option value="SUTM">SUTM</option>
+        
+        <option value="SWL">SWL</option>
+        
+        <option value="SYM">SYM</option>
+        
+        <option value="SYS">SYS</option>
+        
+        <option value="SZTM">SZTM</option>
+        
+        <option value="TAJT">TAJT</option>
+        
+        <option value="TATM">TATM</option>
+        
+        <option value="TBL">TBL</option>
+        
+        <option value="TCORP">TCORP</option>
+        
+        <option value="TCORPCPS">TCORPCPS</option>
+        
+        <option value="TELE">TELE</option>
+        
+        <option value="TGL">TGL</option>
+        
+        <option value="THALL">THALL</option>
+        
+        <option value="THCCL">THCCL</option>
+        
+        <option value="TICL">TICL</option>
+        
+        <option value="TOMCL">TOMCL</option>
+        
+        <option value="TOWL">TOWL</option>
+        
+        <option value="TPL">TPL</option>
+        
+        <option value="TPLI">TPLI</option>
+        
+        <option value="TPLL">TPLL</option>
+        
+        <option value="TPLP">TPLP</option>
+        
+        <option value="TPLRF1">TPLRF1</option>
+        
+        <option value="TPLT">TPLT</option>
+        
+        <option value="TREET">TREET</option>
+        
+        <option value="TRG">TRG</option>
+        
+        <option value="TRIBL">TRIBL</option>
+        
+        <option value="TRIPF">TRIPF</option>
+        
+        <option value="TRPOL">TRPOL</option>
+        
+        <option value="TRSM">TRSM</option>
+        
+        <option value="TSBL">TSBL</option>
+        
+        <option value="TSMF">TSMF</option>
+        
+        <option value="TSML">TSML</option>
+        
+        <option value="TSPL">TSPL</option>
+        
+        <option value="UBDL">UBDL</option>
+        
+        <option value="UBL">UBL</option>
+        
+        <option value="UCAPM">UCAPM</option>
+        
+        <option value="UDLI">UDLI</option>
+        
+        <option value="UDPL">UDPL</option>
+        
+        <option value="UNIC">UNIC</option>
+        
+        <option value="UNITY">UNITY</option>
+        
+        <option value="UPFL">UPFL</option>
+        
+        <option value="USMT">USMT</option>
+        
+        <option value="UVIC">UVIC</option>
+        
+        <option value="WAFI">WAFI</option>
+        
+        <option value="WAHN">WAHN</option>
+        
+        <option value="WASL">WASL</option>
+        
+        <option value="WAVES">WAVES</option>
+        
+        <option value="WAVESAPP">WAVESAPP</option>
+        
+        <option value="WHALE">WHALE</option>
+        
+        <option value="WTL">WTL</option>
+        
+        <option value="WYETH">WYETH</option>
+        
+        <option value="YOUW">YOUW</option>
+        
+        <option value="ZAHID">ZAHID</option>
+        
+        <option value="ZAL">ZAL</option>
+        
+        <option value="ZELP">ZELP</option>
+        
+        <option value="ZHCM">ZHCM</option>
+        
+        <option value="ZIL">ZIL</option>
+        
+        <option value="ZTL">ZTL</option>
+        
+        <option value="ZUMA">ZUMA</option>
+        
+    </select>
+    <button type="button" class="btn btn-primary" id="addBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add
+    </button>
+    <div class="compare-chips" id="chipContainer">
+        
+    </div>
+    <input type="hidden" name="s" id="symbolsInput" value="">
+</form>
+
+<!-- Chart container (always present, hidden when empty) -->
+<div class="chart-container" id="compareChartContainer" style="display:none">
+    <div id="compareChart"></div>
+</div>
+
+
+<!-- Client-rendered table placeholder (static/Netlify mode) -->
+<div class="table-container mt-4" id="compareTableContainer" style="display:none">
+    <div class="table-header">
+        <div class="table-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+            Metrics Comparison
+        </div>
+    </div>
+    <div class="table-wrapper" id="compareTableBody"></div>
+</div>
+
+
+<div class="empty-state" id="emptyState" >
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <h3>Select Stocks to Compare</h3>
+    <p>Use the dropdown above to add up to 5 stocks for side-by-side comparison.</p>
+</div>
+
+<!-- Loading spinner for client-side rendering -->
+<div id="compareLoading" style="display:none">
+    <div class="spinner"></div>
+    <p class="text-muted" style="text-align:center;margin-top:0.5rem">Loading comparison data...</p>
+</div>
+
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="0" fill="#CFB53B"/>
+                        <path d="M8 22L12 14L16 18L20 10L24 16" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>PSX Analyzer</span>
+                </div>
+                <p class="footer-text">Pakistan Stock Exchange analysis. Data from PSX Data Portal, Yahoo Finance, World Bank, and FRED. Covers Jan 2010 – Feb 2026. See <a href="/downloads" style="color:var(--gold-dark)">Downloads &amp; About</a> for methodology.</p>
+                <p class="footer-disclaimer">Verify the data independently by checking the source code before making investment decisions.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var CHART_COLORS = ['#CFB53B', '#5B8DEF', '#2e7d32', '#c62828', '#9c27b0'];
+    var SERVER_RENDERED = false;
+
+    var addBtn = document.getElementById('addBtn');
+    var addSymbol = document.getElementById('addSymbol');
+    var symbolsInput = document.getElementById('symbolsInput');
+    var chipContainer = document.getElementById('chipContainer');
+    var emptyState = document.getElementById('emptyState');
+    var chartContainer = document.getElementById('compareChartContainer');
+    var tableContainer = document.getElementById('compareTableContainer');
+    var loading = document.getElementById('compareLoading');
+
+    function getSelected() {
+        var val = symbolsInput.value.trim();
+        return val ? val.split(',').filter(function(s) { return s.trim(); }) : [];
+    }
+
+    function updateUrl() {
+        var symbols = getSelected();
+        window.location.href = '/compare?s=' + symbols.join(',');
+    }
+
+    addBtn.addEventListener('click', function() {
+        var sym = addSymbol.value.trim();
+        if (!sym) return;
+        var current = getSelected();
+        if (current.length >= 5) { alert('Maximum 5 stocks'); return; }
+        if (current.includes(sym)) return;
+        current.push(sym);
+        symbolsInput.value = current.join(',');
+        updateUrl();
+    });
+
+    chipContainer.addEventListener('click', function(e) {
+        var btn = e.target.closest('.chip-remove');
+        if (!btn) return;
+        var sym = btn.dataset.symbol;
+        var current = getSelected().filter(function(s) { return s !== sym; });
+        symbolsInput.value = current.join(',');
+        updateUrl();
+    });
+
+    // ── Server-rendered mode: Plotly chart from Jinja2 ──────────────────
+    
+
+    // ── Client-side mode: fetch JSON and render when on static site ─────
+    if (!SERVER_RENDERED) {
+        var params = new URLSearchParams(window.location.search);
+        var sParam = params.get('s');
+        if (sParam) {
+            var urlSymbols = sParam.split(',').map(function(s) { return s.trim().toUpperCase(); }).filter(Boolean).slice(0, 5);
+            if (urlSymbols.length > 0) {
+                // Update chips from URL params
+                symbolsInput.value = urlSymbols.join(',');
+                chipContainer.innerHTML = '';
+                urlSymbols.forEach(function(s) {
+                    var chip = document.createElement('div');
+                    chip.className = 'chip';
+                    chip.innerHTML = s + ' <button type="button" class="chip-remove" data-symbol="' + s + '">&times;</button>';
+                    chipContainer.appendChild(chip);
+                });
+
+                emptyState.style.display = 'none';
+                loading.style.display = 'block';
+                clientSideCompare(urlSymbols);
+            }
+        }
+    }
+
+    function fmtPct(val) {
+        if (val === null || val === undefined || isNaN(val)) return 'N/A';
+        return (val * 100).toFixed(2) + '%';
+    }
+    function fmtNum(val, dec) {
+        dec = dec !== undefined ? dec : 2;
+        if (val === null || val === undefined || isNaN(val)) return 'N/A';
+        return Number(val).toFixed(dec);
+    }
+    function colorClass(val) {
+        if (val === null || val === undefined || isNaN(val)) return '';
+        return val > 0 ? 'cell-positive' : val < 0 ? 'cell-negative' : '';
+    }
+
+    function clientSideCompare(symbols) {
+        // Fetch price data for each symbol and master metrics
+        var pricePromises = symbols.map(function(sym) {
+            return fetch('/api/prices/' + sym + '.json')
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .catch(function() { return null; });
+        });
+        var masterPromise = fetch('/api/master.json')
+            .then(function(r) { return r.ok ? r.json() : {}; })
+            .catch(function() { return {}; });
+
+        Promise.all([Promise.all(pricePromises), masterPromise]).then(function(results) {
+            var priceDataArray = results[0];
+            var masterData = results[1];
+            loading.style.display = 'none';
+
+            // ── Render normalized price chart ────────────────────────────
+            var traces = [];
+            for (var i = 0; i < symbols.length; i++) {
+                var sym = symbols[i];
+                var pd = priceDataArray[i];
+                if (!pd || !pd.dates || pd.dates.length < 2) continue;
+                var basePrice = pd.close[0];
+                var normalized = pd.close.map(function(v) { return v / basePrice * 100; });
+                traces.push({
+                    x: pd.dates,
+                    y: normalized,
+                    mode: 'lines',
+                    name: sym,
+                    line: { color: CHART_COLORS[i % CHART_COLORS.length], width: 2 },
+                    hovertemplate: sym + ': %{y:.1f}<extra></extra>'
+                });
+            }
+
+            if (traces.length > 0) {
+                chartContainer.style.display = 'block';
+                var layout = {
+                    title: { text: '<b>Price Comparison</b> — Normalized to 100 at First Date', font: { size: 14 } },
+                    xaxis: { title: '' },
+                    yaxis: { title: 'Normalized Price (Base = 100)' },
+                    plot_bgcolor: '#ffffff',
+                    paper_bgcolor: '#ffffff',
+                    font: { family: 'Inter, system-ui, sans-serif', color: '#1a1a1a' },
+                    margin: { l: 60, r: 30, t: 55, b: 50 },
+                    legend: { orientation: 'h', yanchor: 'bottom', y: 1.02, xanchor: 'right', x: 1 },
+                    shapes: [{ type: 'line', x0: 0, x1: 1, xref: 'paper', y0: 100, y1: 100, line: { dash: 'dot', color: '#c0c0c0', width: 1 } }]
+                };
+                Plotly.newPlot('compareChart', traces, layout, { responsive: true, displayModeBar: false });
+            }
+
+            // ── Render metrics comparison table ─────────────────────────
+            var metricsRows = [
+                ['Last Close', 'last_close', 'num'],
+                ['Total Return', 'total_return', 'pct_color'],
+                ['CAGR', 'cagr', 'pct_color'],
+                ['Volatility', 'annualized_volatility', 'pct'],
+                ['Max Drawdown', 'max_drawdown', 'pct_neg'],
+                ['Sharpe Ratio', 'sharpe_ratio', 'num'],
+                ['Beta', 'beta', 'num'],
+                ['Correlation', 'correlation', 'num'],
+                ['YTD Return', 'return_ytd', 'pct_color'],
+                ['1M Return', 'return_1m', 'pct_color'],
+                ['1Y Return', 'return_1y', 'pct_color'],
+                ['Volume Trend', 'volume_trend', 'numx'],
+                ['52W High', '52w_high', 'num'],
+                ['52W Low', '52w_low', 'num'],
+                ['P/E Ratio', 'pe_ratio', 'num'],
+                ['Div Yield', 'dividend_yield', 'numpct']
+            ];
+
+            var hasMetrics = symbols.some(function(s) { return masterData[s]; });
+            if (hasMetrics) {
+                var html = '<table><thead><tr><th>Metric</th>';
+                symbols.forEach(function(s) { html += '<th>' + s + '</th>'; });
+                html += '</tr></thead><tbody>';
+
+                metricsRows.forEach(function(row) {
+                    var label = row[0], key = row[1], fmt = row[2];
+                    html += '<tr><td class="text-muted">' + label + '</td>';
+                    symbols.forEach(function(s) {
+                        var d = masterData[s] || {};
+                        var val = d[key];
+                        var cls = 'cell-mono';
+                        var txt = '';
+                        if (fmt === 'pct' || fmt === 'pct_color') {
+                            txt = fmtPct(val);
+                            if (fmt === 'pct_color') cls += ' ' + colorClass(val);
+                        } else if (fmt === 'pct_neg') {
+                            txt = fmtPct(val);
+                            cls += ' cell-negative';
+                        } else if (fmt === 'numx') {
+                            txt = fmtNum(val) + 'x';
+                        } else if (fmt === 'numpct') {
+                            txt = fmtNum(val) + '%';
+                        } else {
+                            txt = fmtNum(val);
+                        }
+                        html += '<td class="' + cls + '">' + txt + '</td>';
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+
+                document.getElementById('compareTableBody').innerHTML = html;
+                tableContainer.style.display = 'block';
+            }
+        }).catch(function(err) {
+            loading.style.display = 'none';
+            console.error('Compare fetch error:', err);
+        });
+    }
+});
+</script>
+
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+    </script>
+</body>
+</html>

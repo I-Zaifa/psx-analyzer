@@ -1,0 +1,11 @@
+/download/*.csv
+  Content-Type: text/csv; charset=utf-8
+  Content-Disposition: attachment
+
+/download/symbol/*
+  Content-Type: text/csv; charset=utf-8
+  Content-Disposition: attachment
+
+/download/source/*.py
+  Content-Type: text/x-python; charset=utf-8
+  Content-Disposition: attachment

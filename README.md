@@ -58,7 +58,7 @@ The `freeze.py` script pre-renders every page (dashboard, all 600+ stock pages, 
 ## Deploy to Vercel
 1. Import the repo in Vercel (GitHub integration).
 2. Vercel will read `vercel.json` and:
-   - install with `pip install -r requirements-build.txt`
+   - install with `python -m pip install --break-system-packages -r requirements-build.txt`
    - build with `python freeze.py`
    - publish the `build/` directory
 3. Ensure the project is set to auto-deploy on `main` so the scheduled data refresh pushes trigger a rebuild.
