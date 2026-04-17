@@ -1,0 +1,29 @@
+# Exclude Python source and data from Vercel deployment bundle.
+# These are only needed during the build (python freeze.py) and must NOT be
+# packaged into any serverless-function bundle, which would push the bundle
+# well past Vercel's 245 MB limit.
+
+# Python source directories
+app/
+backend/
+
+# Root-level Python scripts
+*.py
+
+# Python dependency / cache artefacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Requirement files (build-time only)
+requirements*.txt
+
+# Data directory – CSVs are copied into build/ by freeze.py; the originals
+# (including the 14 MB cache and 615-file symbols dir) must not be re-bundled.
+data/
+
+# Other non-output files
+netlify.toml
+.github/
+README.md
