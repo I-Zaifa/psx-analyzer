@@ -10,9 +10,6 @@ __pycache__/
 # Local virtual environments
 .venv/
 
-# Generated build output (should not be committed)
-build/
-
 # Runtime cache/logs not needed for static builds
 data/cache/
 data/logs/
