@@ -1,4 +1,5 @@
 {
+  "framework": null,
   "installCommand": "pip install -r requirements-build.txt",
   "buildCommand": "python freeze.py",
   "outputDirectory": "build",
