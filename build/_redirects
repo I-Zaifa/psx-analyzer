@@ -1,7 +1,0 @@
-# API redirects
-/api/symbols    /api/symbols.json    200
-/api/master     /api/master.json     200
-
-# Compare page: always serve the same HTML, JS handles query params
-/compare    /compare/index.html    200!
-/compare/*  /compare/index.html    200
