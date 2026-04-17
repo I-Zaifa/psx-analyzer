@@ -1,0 +1,51 @@
+name: Update PSX Data
+
+# Runs twice daily at 09:00 and 17:00 PKT (UTC+5 = 04:00 and 12:00 UTC).
+# Also available as a manual trigger from the Actions tab.
+on:
+  schedule:
+    - cron: "0 4,12 * * *"
+  workflow_dispatch:
+
+# Allow the job to push commits back to the repository.
+permissions:
+  contents: write
+
+jobs:
+  refresh-data:
+    name: Refresh market data
+    runs-on: ubuntu-latest
+    timeout-minutes: 90   # full pipeline takes ~15-30 min; 90 min is a safe ceiling
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install pipeline dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run data pipeline
+        run: python run.py --pipeline
+
+      - name: Commit and push updated data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage only the canonical CSV outputs; ignore cache, logs, and build artefacts.
+          git add data/csv/
+
+          # Exit cleanly when nothing changed (idempotent runs).
+          if git diff --cached --quiet; then
+            echo "No data changes — nothing to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: refresh PSX market data [skip ci]"
+          git push

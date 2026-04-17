@@ -55,6 +55,31 @@ The full pipeline takes about 15–30 minutes to pull data for all ~600 companie
 --
 The `freeze.py` script pre-renders every page (dashboard, all 600+ stock pages, screener, sectors, downloads) into plain HTML with embedded Plotly charts. The Compare page works fully on the static site too: it fetches pre-built JSON data client-side and renders charts in the browser. No server, no database, just static files that load fast.
 
+## Automated Data Pipeline
+
+A GitHub Actions workflow (`.github/workflows/update-psx-data.yml`) keeps the live Netlify site up to date without any manual intervention.
+
+**Schedule:** twice daily at **09:00 and 17:00 PKT** (04:00 and 12:00 UTC).
+
+**What it does:**
+1. Checks out the repository.
+2. Installs Python dependencies from `requirements.txt`.
+3. Runs `python run.py --pipeline` — fetches fresh price data, macro data, and fundamentals for all ~600 companies and writes the results to `data/csv/`.
+4. Stages the updated CSVs, commits, and pushes back to the repo with `[skip ci]`.
+5. The push triggers Netlify's automatic rebuild: Netlify runs `python freeze.py` on its servers to regenerate all static HTML and JSON files from the new CSVs, and publishes the result.
+6. If the pipeline yields no new data (e.g. a market holiday), the commit step exits cleanly with no commit made.
+
+**Required repository setup:**
+
+| What | Where | Notes |
+|------|-------|-------|
+| Repository write permission | Workflow `permissions: contents: write` | Already set in the workflow file; no extra configuration needed |
+| `GITHUB_TOKEN` | Automatically injected by GitHub Actions | Used for the `git push` step |
+
+No third-party API keys are required. All data sources (PSX Data Portal, Yahoo Finance, World Bank API, FRED) are accessed via public endpoints and open-source libraries.
+
+To trigger a manual refresh, go to **Actions → Update PSX Data → Run workflow**.
+
 ## Built With
 - **Python** + Flask for the backend
 - **Plotly.js** for interactive charts
