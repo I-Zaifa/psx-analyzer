@@ -1,0 +1,59 @@
+name: Update PSX Data
+
+# Primary run: Monday–Friday at 17:45 PKT (12:45 UTC).
+# First retry:  Monday–Friday at 17:55 PKT (12:55 UTC) — ~10-minute gap.
+# Second retry: Monday–Friday at 18:55 PKT (13:55 UTC) — ~1-hour gap.
+#
+# All three runs are idempotent: if an earlier run already committed fresh data,
+# the later runs will find no CSV diff and exit cleanly without committing.
+# Manual trigger is also available from the Actions tab.
+on:
+  schedule:
+    - cron: "45 12 * * 1-5"   # primary   — 17:45 PKT
+    - cron: "55 12 * * 1-5"   # retry 1   — 17:55 PKT (~10 min later)
+    - cron: "55 13 * * 1-5"   # retry 2   — 18:55 PKT (~1 hour later)
+  workflow_dispatch:
+
+# Allow the job to push commits back to the repository.
+permissions:
+  contents: write
+
+jobs:
+  refresh-data:
+    name: Refresh market data
+    runs-on: ubuntu-latest
+    timeout-minutes: 90   # full pipeline takes ~15-30 min; 90 min is a safe ceiling
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install pipeline dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run data pipeline
+        run: python run.py --pipeline
+
+      - name: Commit and push updated data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage only the canonical CSV outputs; ignore cache, logs, and build artefacts.
+          git add data/csv/
+
+          # Exit cleanly when nothing changed (idempotent runs — earlier run already
+          # committed today's data, or it's a market holiday).
+          if git diff --cached --quiet; then
+            echo "No data changes — nothing to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: refresh PSX market data [skip ci]"
+          git push
