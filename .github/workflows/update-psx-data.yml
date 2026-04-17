@@ -1,10 +1,17 @@
 name: Update PSX Data
 
-# Runs twice daily at 09:00 and 17:00 PKT (UTC+5 = 04:00 and 12:00 UTC).
-# Also available as a manual trigger from the Actions tab.
+# Primary run: Monday–Friday at 17:45 PKT (12:45 UTC).
+# First retry:  Monday–Friday at 17:55 PKT (12:55 UTC) — ~10-minute gap.
+# Second retry: Monday–Friday at 18:55 PKT (13:55 UTC) — ~1-hour gap.
+#
+# All three runs are idempotent: if an earlier run already committed fresh data,
+# the later runs will find no CSV diff and exit cleanly without committing.
+# Manual trigger is also available from the Actions tab.
 on:
   schedule:
-    - cron: "0 4,12 * * *"
+    - cron: "45 12 * * 1-5"   # primary   — 17:45 PKT
+    - cron: "55 12 * * 1-5"   # retry 1   — 17:55 PKT (~10 min later)
+    - cron: "55 13 * * 1-5"   # retry 2   — 18:55 PKT (~1 hour later)
   workflow_dispatch:
 
 # Allow the job to push commits back to the repository.
@@ -41,7 +48,8 @@ jobs:
           # Stage only the canonical CSV outputs; ignore cache, logs, and build artefacts.
           git add data/csv/
 
-          # Exit cleanly when nothing changed (idempotent runs).
+          # Exit cleanly when nothing changed (idempotent runs — earlier run already
+          # committed today's data, or it's a market holiday).
           if git diff --cached --quiet; then
             echo "No data changes — nothing to commit."
             exit 0

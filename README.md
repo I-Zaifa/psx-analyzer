@@ -59,7 +59,15 @@ The `freeze.py` script pre-renders every page (dashboard, all 600+ stock pages, 
 
 A GitHub Actions workflow (`.github/workflows/update-psx-data.yml`) keeps the live Netlify site up to date without any manual intervention.
 
-**Schedule:** twice daily at **09:00 and 17:00 PKT** (04:00 and 12:00 UTC).
+**Schedule (Monday – Friday only):**
+
+| Run | PKT | UTC | Purpose |
+|-----|-----|-----|---------|
+| Primary | 17:45 | 12:45 | Main daily refresh |
+| Retry 1 | 17:55 | 12:55 | ~10-minute fallback |
+| Retry 2 | 18:55 | 13:55 | ~1-hour fallback |
+
+All three runs are idempotent. If the primary succeeds and commits fresh data, the retry runs will find no CSV diff and exit cleanly. If the primary fails (API timeout, PSX outage, etc.), a retry picks it up. If all three fail, the previous build stays live and a staleness notice appears on the site.
 
 **What it does:**
 1. Checks out the repository.

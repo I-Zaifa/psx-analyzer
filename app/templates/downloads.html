@@ -17,7 +17,29 @@
         About This Project
     </div>
     <p class="text-sm" style="margin-bottom:0.75rem">
-        PSX Analyzer is a quantitative analysis tool for the Pakistan Stock Exchange. It fetches daily price and volume data for every listed equity, computes standard financial metrics, and presents the results in an interactive dashboard. The entire pipeline i.e. data collection, computation, and visualization is written in Python and runs locally before being exported as a static site.If you are visiting beyond the Feb of 2026, you will need to run the python files again if the latest data is required. All instructions are in the repository.
+        PSX Analyzer is a quantitative analysis tool for the Pakistan Stock Exchange. It fetches daily price and volume data for every listed equity, computes standard financial metrics, and presents the results in an interactive dashboard. The entire pipeline — data collection, computation, and visualization — is written in Python and open-sourced in the repository.
+    </p>
+
+    <div class="section-title" style="margin-bottom:0.75rem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Live Updates &amp; Automated Pipeline
+    </div>
+    <p class="text-sm" style="margin-bottom:0.5rem">
+        This site is no longer a one-time static snapshot — it is rebuilt automatically every trading day. A GitHub Actions workflow fetches fresh data from PSX, Yahoo Finance, and macro APIs, commits the updated CSVs to the repository, and Netlify detects the commit and rebuilds the entire static site from scratch.
+    </p>
+    <table class="methodology-table" style="margin-bottom:0.75rem">
+        <thead><tr><th>What</th><th>Detail</th></tr></thead>
+        <tbody>
+            <tr><td><strong>Schedule</strong></td><td>Monday – Friday, <strong>17:45 PKT</strong> (12:45 UTC) primary run</td></tr>
+            <tr><td><strong>Retry 1</strong></td><td>17:55 PKT (~10 min later) — runs if the primary failed or produced no data</td></tr>
+            <tr><td><strong>Retry 2</strong></td><td>18:55 PKT (~1 hour later) — final fallback for the day</td></tr>
+            <tr><td><strong>Idempotent</strong></td><td>Later runs skip committing if an earlier run already succeeded today</td></tr>
+            <tr><td><strong>Holidays / weekends</strong></td><td>Pipeline runs but finds no new market data and exits without committing</td></tr>
+            <tr><td><strong>If all runs fail</strong></td><td>The previous build stays live; data will be stale until the next successful run</td></tr>
+        </tbody>
+    </table>
+    <p class="text-sm" style="margin-bottom:0.75rem">
+        A notice appears at the top of every page when the site data appears to be more than four days old, so you know at a glance if the pipeline has not run recently.
     </p>
 
     <div class="section-title" style="margin-bottom:0.75rem">

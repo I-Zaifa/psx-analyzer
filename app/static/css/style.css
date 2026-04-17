@@ -862,6 +862,27 @@ input:focus, select:focus {
     color: var(--text-primary);
 }
 
+/* ── Stale Data Banner ─────────────────────────────────────────────────────── */
+
+.stale-banner {
+    background: var(--gold-bg);
+    border-bottom: 1px solid var(--gold-border);
+    padding: 0.4rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    font-size: 0.78rem;
+    color: var(--gold-dark);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
+.stale-banner svg {
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
 /* ── Loading Spinner ───────────────────────────────────────────────────────── */
 
 .spinner {
