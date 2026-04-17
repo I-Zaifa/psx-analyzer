@@ -7,7 +7,7 @@
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
         Market Dashboard
     </h1>
-    <p class="page-subtitle">Pakistan Stock Exchange — {{ stats.total_companies|default(0) }} companies across {{ stats.total_sectors|default(0) }} sectors{% if data_range %} · {{ data_range }}{% endif %}</p>
+    <p class="page-subtitle">Pakistan Stock Exchange : {{ stats.total_companies|default(0) }} companies across {{ stats.total_sectors|default(0) }} sectors.</p>
 </div>
 
 {% if stats %}
