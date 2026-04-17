@@ -55,6 +55,15 @@ The full pipeline takes about 15–30 minutes to pull data for all ~600 companie
 --
 The `freeze.py` script pre-renders every page (dashboard, all 600+ stock pages, screener, sectors, downloads) into plain HTML with embedded Plotly charts. The Compare page works fully on the static site too: it fetches pre-built JSON data client-side and renders charts in the browser. No server, no database, just static files that load fast.
 
+## Deploy to Vercel
+1. Import the repo in Vercel (GitHub integration).
+2. Vercel will read `vercel.json` and:
+   - install with `pip install -r requirements-build.txt`
+   - build with `python freeze.py`
+   - publish the `build/` directory
+3. Ensure the project is set to auto-deploy on `main` so the scheduled data refresh pushes trigger a rebuild.
+4. If prompted for a Python version, use **3.11**.
+
 ## Automated Data Pipeline
 
 A GitHub Actions workflow (`.github/workflows/update-psx-data.yml`) keeps the live Netlify site up to date without any manual intervention.
@@ -66,7 +75,7 @@ A GitHub Actions workflow (`.github/workflows/update-psx-data.yml`) keeps the li
 2. Installs Python dependencies from `requirements.txt`.
 3. Runs `python run.py --pipeline` — fetches fresh price data, macro data, and fundamentals for all ~600 companies and writes the results to `data/csv/`.
 4. Stages the updated CSVs, commits, and pushes back to the repo with `[skip ci]`.
-5. The push triggers Netlify's automatic rebuild: Netlify runs `python freeze.py` on its servers to regenerate all static HTML and JSON files from the new CSVs, and publishes the result.
+5. The push triggers the host's automatic rebuild (Vercel or Netlify): it runs `python freeze.py` on its servers to regenerate all static HTML and JSON files from the new CSVs, and publishes the result.
 6. If the pipeline yields no new data (e.g. a market holiday), the commit step exits cleanly with no commit made.
 
 **Required repository setup:**
