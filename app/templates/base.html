@@ -74,7 +74,7 @@
         var diffDays = (Date.now() - asOf.getTime()) / 86400000;
         if (diffDays > 4) {
             var el = document.getElementById('staleBannerMsg');
-            if (el) el.textContent = 'Data as of {{ data_as_of }} "." the automated pipeline runs Mon\u2013Fri at 17:45 PKT.';
+            if (el) el.textContent = 'Data as of {{ data_as_of }}. The automated update runs Mon\u2013Fri at 17:45 PKT.';
             var banner = document.getElementById('staleBanner');
             if (banner) banner.style.display = '';
         }
