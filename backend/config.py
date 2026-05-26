@@ -1,3 +1,4 @@
+import random
 import os
 from pathlib import Path
 
@@ -14,9 +15,8 @@ for d in [CACHE_DIR, CSV_DIR, SYMBOLS_CSV_DIR, BUNDLED_DIR, LOG_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # ── Data Fetching ──────────────────────────────────────────────────────────────
-REQUEST_DELAY = 0.5          # seconds between requests (polite)
-MAX_RETRIES = 3
-BACKOFF_FACTOR = 2.0
+MIN_REQUEST_DELAY = 1.0      # randomized delay between daily fetches
+MAX_REQUEST_DELAY = 3.0
 REQUEST_TIMEOUT = 30         # seconds
 HISTORY_START_DATE = "2010-01-01"
 
@@ -52,3 +52,7 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.5",
 }
+
+
+def daily_request_delay() -> float:
+    return random.uniform(MIN_REQUEST_DELAY, MAX_REQUEST_DELAY)

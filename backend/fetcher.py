@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 from backend.config import (
     PSX_LISTINGS_URL, PSX_COMPANY_URL, PSX_HISTORICAL_URL,
-    HEADERS, REQUEST_DELAY, MAX_RETRIES, BACKOFF_FACTOR,
+    HEADERS, daily_request_delay,
     REQUEST_TIMEOUT, HISTORY_START_DATE, CACHE_DIR, ERROR_LOG_FILE
 )
 
@@ -33,24 +33,17 @@ def _setup_session() -> requests.Session:
 
 SESSION = _setup_session()
 
-
-def _retry_request(url: str, method: str = "GET", **kwargs) -> Optional[requests.Response]:
-    for attempt in range(MAX_RETRIES):
-        try:
-            kwargs.setdefault("timeout", REQUEST_TIMEOUT)
-            resp = SESSION.request(method, url, **kwargs)
-            if resp.status_code == 429:
-                wait = BACKOFF_FACTOR ** (attempt + 1)
-                logger.warning(f"Rate limited on {url}, waiting {wait}s")
-                time.sleep(wait)
-                continue
-            resp.raise_for_status()
-            return resp
-        except Exception as e:
-            wait = BACKOFF_FACTOR ** attempt
-            logger.warning(f"Attempt {attempt+1}/{MAX_RETRIES} failed for {url}: {e}")
-            if attempt < MAX_RETRIES - 1:
-                time.sleep(wait)
+def _single_request(url: str, method: str = "GET", **kwargs) -> Optional[requests.Response]:
+    try:
+        kwargs.setdefault("timeout", REQUEST_TIMEOUT)
+        resp = SESSION.request(method, url, **kwargs)
+        if resp.status_code == 429:
+            logger.warning(f"Rate limit exceeded for {url}; request will not be retried")
+            return None
+        resp.raise_for_status()
+        return resp
+    except Exception as e:
+        logger.warning(f"Request failed for {url}: {e}")
     return None
 
 
@@ -72,7 +65,7 @@ def fetch_tickers_psx_lib() -> Optional[pd.DataFrame]:
 def fetch_tickers_scrape() -> Optional[pd.DataFrame]:
     """Fallback: scrape dps.psx.com.pk/listings."""
     try:
-        resp = _retry_request(PSX_LISTINGS_URL)
+        resp = _single_request(PSX_LISTINGS_URL)
         if resp is None:
             return None
 
@@ -124,7 +117,7 @@ def fetch_tickers_scrape() -> Optional[pd.DataFrame]:
 def _fetch_tickers_from_sectors() -> Optional[pd.DataFrame]:
     """Try getting company list from sector summary page."""
     try:
-        resp = _retry_request("https://dps.psx.com.pk/sector-summary")
+        resp = _single_request("https://dps.psx.com.pk/sector-summary")
         if resp is None:
             return None
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -326,7 +319,7 @@ def _fetch_history_timeseries(symbol: str) -> Optional[pd.DataFrame]:
     """
     try:
         url = f"https://dps.psx.com.pk/timeseries/eod/{symbol}"
-        resp = _retry_request(url)
+        resp = _single_request(url)
         if resp is None:
             return None
 
@@ -382,8 +375,10 @@ def fetch_stock_history(symbol: str,
     # Primary: /timeseries/eod (fast, single request, close + volume)
     df = _fetch_history_timeseries(symbol)
 
-    # NOTE: POST /historical fallback disabled - too slow (180+ requests/symbol).
-    # timeseries/eod provides close+volume which is sufficient for all metrics.
+    # Fallback: POST /historical only if the primary source fails.
+    if df is None or df.empty:
+        logger.info(f"Primary history fetch failed for {symbol}; using POST /historical fallback")
+        df = _fetch_history_post(symbol, start, end)
 
     if df is None or df.empty:
         return None
@@ -456,7 +451,7 @@ def fetch_all_stocks(tickers_df: pd.DataFrame,
             failed.append((symbol, str(e)))
             logger.error(f"Failed to fetch {symbol}: {e}")
 
-        time.sleep(REQUEST_DELAY)
+        time.sleep(daily_request_delay())
 
     # Log failures
     if failed:
