@@ -1,14 +1,15 @@
 """
 Data fetcher for PSX stock data.
-Primary: psx-data-reader library
-Fallback: Direct scraping of dps.psx.com.pk
+Primary: dps.psx.com.pk timeseries endpoints
+Fallback: dps.psx.com.pk historical endpoint
 """
 import datetime
 import time
 import logging
 import json
 import pickle
-from typing import Optional, Dict, List, Tuple
+from collections import Counter
+from typing import Optional, Dict, List, Tuple, Set
 
 import pandas as pd
 import numpy as np
@@ -356,94 +357,159 @@ def _fetch_history_post(symbol: str, start: str, end: str) -> Optional[pd.DataFr
     return df
 
 
-def _fetch_history_timeseries(symbol: str) -> Optional[pd.DataFrame]:
+def _fetch_history_timeseries(symbol: str,
+                              latest_market_date: Optional[datetime.date] = None) -> Tuple[Optional[pd.DataFrame], str]:
     """
-    Fallback: GET /timeseries/eod/{symbol}.
+    Primary: GET /timeseries/eod/{symbol}.
     Returns JSON with data as list of [timestamp, close, volume, ?].
     Only provides close+volume (no OHLC), but better than nothing.
+    Returns (dataframe_or_none, status_code).
+    status_code classifies outcomes such as ok, empty_payload, bad_json, 429_rate_limited, etc.
     """
+    url = f"https://dps.psx.com.pk/timeseries/eod/{symbol}"
     try:
-        url = f"https://dps.psx.com.pk/timeseries/eod/{symbol}"
-        resp = _single_request(url)
-        if resp is None:
-            return None
-
-        data = resp.json()
-        if not data or data.get("status") != 1 or not data.get("data"):
-            return None
-
-        records = data["data"]
-        rows = []
-        for rec in records:
-            if isinstance(rec, list) and len(rec) >= 3:
-                ts = rec[0]
-                close = rec[1]
-                volume = rec[2]
-                dt = datetime.datetime.fromtimestamp(ts)
-                rows.append({"date": dt, "close": close, "volume": volume})
-
-        if not rows:
-            return None
-
-        df = pd.DataFrame(rows)
-        df["date"] = pd.to_datetime(df["date"])
-        df = df.set_index("date")
-        for c in ["close", "volume"]:
-            df[c] = pd.to_numeric(df[c], errors="coerce")
-        df = df.sort_index()
-        return df
-
+        resp = SESSION.get(url, timeout=REQUEST_TIMEOUT)
+        if resp.status_code == 429:
+            logger.warning(f"Rate limit exceeded for {url}; request will not be retried")
+            return None, "429_rate_limited"
+        resp.raise_for_status()
     except Exception as e:
-        logger.debug(f"Timeseries EOD for {symbol} failed: {e}")
-    return None
+        logger.warning(f"Request failed for {url}: {e}")
+        return None, "request_failed"
+
+    try:
+        data = resp.json()
+    except (json.JSONDecodeError, ValueError):
+        return None, "bad_json"
+
+    if not isinstance(data, dict):
+        return None, "bad_json"
+
+    status = data.get("status")
+    records = data.get("data")
+    if status != 1:
+        message = str(data.get("message", "")).lower()
+        if any(k in message for k in ["invalid", "not found", "unsupported", "unknown"]):
+            return None, "unsupported_symbol"
+        return None, "status_not_1"
+
+    if not records:
+        return None, "empty_payload"
+
+    rows = []
+    for rec in records:
+        if isinstance(rec, list) and len(rec) >= 3:
+            ts = rec[0]
+            close = rec[1]
+            volume = rec[2]
+            dt = datetime.datetime.fromtimestamp(ts)
+            rows.append({"date": dt, "close": close, "volume": volume})
+
+    if not rows:
+        return None, "empty_payload"
+
+    df = pd.DataFrame(rows)
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.set_index("date")
+    for c in ["close", "volume"]:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+    df = df.sort_index()
+
+    if latest_market_date is not None:
+        latest_row_date = df.index.max().date()
+        if latest_row_date < latest_market_date:
+            return df, "no_trade_latest_market_date"
+
+    return df, "ok"
 
 
 def fetch_stock_history(symbol: str,
                         start: str = HISTORY_START_DATE,
                         end: str = None,
-                        latest_market_date: Optional[datetime.date] = None) -> Optional[pd.DataFrame]:
-    """Fetch historical OHLCV for a single symbol."""
+                        latest_market_date: Optional[datetime.date] = None,
+                        refresh_mode: str = "daily",
+                        fallback_retry_symbols: Optional[Set[str]] = None) -> Tuple[Optional[pd.DataFrame], Dict[str, str]]:
+    """
+    Fetch historical OHLCV for a single symbol.
+
+    Args:
+        refresh_mode: "daily" keeps existing CSV when primary fails, "repair" allows historical fallback.
+        fallback_retry_symbols: symbols explicitly allowed to use historical fallback.
+
+    Returns:
+        (history_df_or_none, metadata_dict)
+    """
+    meta: Dict[str, str] = {
+        "primary_status": "not_run",
+        "fallback_used": "no",
+        "fallback_reason": "",
+    }
     if end is None:
         end = datetime.date.today().strftime("%Y-%m-%d")
 
+    retry_symbols = fallback_retry_symbols or set()
     existing_df = _load_existing_history(symbol)
     if latest_market_date is not None and existing_df is not None and not existing_df.empty:
         last_existing_date = existing_df.index.max().date()
         if last_existing_date >= latest_market_date:
-            return existing_df
+            meta["primary_status"] = "already_up_to_date"
+            return existing_df, meta
 
     # Primary: /timeseries/eod (fast, single request, close + volume)
-    df = _fetch_history_timeseries(symbol)
+    df, primary_status = _fetch_history_timeseries(symbol, latest_market_date=latest_market_date)
+    meta["primary_status"] = primary_status
     df = _normalize_history_frame(df) if df is not None and not df.empty else pd.DataFrame()
 
-    # Fallback: POST /historical only if the primary source fails.
+    existing_available = existing_df is not None and not existing_df.empty
+    fallback_eligible = (not existing_available) or refresh_mode == "repair" or symbol in retry_symbols
+    if not existing_available:
+        fallback_reason = "missing_local_csv"
+    elif refresh_mode == "repair":
+        fallback_reason = "repair_mode"
+    elif symbol in retry_symbols:
+        fallback_reason = "retry_queue"
+    else:
+        fallback_reason = ""
+
+    # Fallback: POST /historical only for missing/new symbols, repair mode, or retry queue.
     if df.empty:
-        if existing_df is not None and not existing_df.empty:
-            logger.info(f"No new daily history for {symbol}; keeping existing CSV")
-            return existing_df
-        logger.info(f"Primary history fetch failed for {symbol}; using POST /historical fallback")
-        df = _fetch_history_post(symbol, start, end)
-        df = _normalize_history_frame(df) if df is not None and not df.empty else pd.DataFrame()
+        if fallback_eligible:
+            meta["fallback_used"] = "yes"
+            meta["fallback_reason"] = fallback_reason
+            logger.info(f"Primary history fetch for {symbol} failed ({primary_status}); using POST /historical fallback ({fallback_reason})")
+            df = _fetch_history_post(symbol, start, end)
+            df = _normalize_history_frame(df) if df is not None and not df.empty else pd.DataFrame()
+        elif existing_available:
+            logger.info(f"Primary history fetch for {symbol} failed ({primary_status}); keeping existing CSV")
+            return existing_df, meta
 
     if df.empty:
-        return None
+        return None, meta
 
-    if existing_df is not None and not existing_df.empty:
+    if existing_available:
         last_existing_date = existing_df.index.max()
         new_rows = df[df.index > last_existing_date]
         if new_rows.empty:
-            return existing_df
+            return existing_df, meta
         df = pd.concat([existing_df, new_rows])
 
     df = _normalize_history_frame(df)
 
-    return df
+    return df, meta
 
 
 def fetch_all_stocks(tickers_df: pd.DataFrame,
                      start: str = HISTORY_START_DATE,
-                     latest_market_date: Optional[datetime.date] = None) -> Dict[str, pd.DataFrame]:
-    """Fetch historical data for all symbols with progress bar."""
+                     latest_market_date: Optional[datetime.date] = None,
+                     refresh_mode: str = "daily",
+                     fallback_retry_symbols: Optional[List[str]] = None) -> Dict[str, pd.DataFrame]:
+    """
+    Fetch historical data for all symbols with progress bar.
+
+    Args:
+        refresh_mode: "daily" for close refresh, "repair" for monthly backfill/repair.
+        fallback_retry_symbols: symbols explicitly allowed to use historical fallback.
+    """
     if "symbol" not in tickers_df.columns:
         logger.error("No 'symbol' column in tickers DataFrame")
         return {}
@@ -451,9 +517,12 @@ def fetch_all_stocks(tickers_df: pd.DataFrame,
     symbols = tickers_df["symbol"].tolist()
     results = {}
     failed = []
+    primary_failures = Counter()
+    fallback_counts = Counter()
     end = datetime.date.today().strftime("%Y-%m-%d")
+    retry_symbols = set(fallback_retry_symbols or [])
 
-    logger.info(f"Fetching historical data for {len(symbols)} symbols...")
+    logger.info(f"Fetching historical data for {len(symbols)} symbols (mode={refresh_mode})...")
 
     for symbol in tqdm(symbols, desc="Fetching stocks", unit="sym"):
         try:
@@ -464,7 +533,19 @@ def fetch_all_stocks(tickers_df: pd.DataFrame,
                     results[symbol] = existing_df
                     continue
 
-            df = fetch_stock_history(symbol, start, end, latest_market_date=latest_market_date)
+            df, meta = fetch_stock_history(
+                symbol,
+                start,
+                end,
+                latest_market_date=latest_market_date,
+                refresh_mode=refresh_mode,
+                fallback_retry_symbols=retry_symbols
+            )
+            primary_status = meta.get("primary_status", "")
+            if primary_status not in {"ok", "already_up_to_date"}:
+                primary_failures[primary_status] += 1
+            if meta.get("fallback_used") == "yes":
+                fallback_counts[meta.get("fallback_reason", "unknown")] += 1
             if df is not None and not df.empty and len(df) >= 5:
                 results[symbol] = df
             else:
@@ -486,4 +567,10 @@ def fetch_all_stocks(tickers_df: pd.DataFrame,
 
     logger.info(f"Successfully fetched {len(results)}/{len(symbols)} symbols "
                 f"({len(failed)} failed)")
+    if primary_failures:
+        failures_fmt = ", ".join([f"{reason}={count}" for reason, count in sorted(primary_failures.items())])
+        logger.info(f"Primary timeseries outcomes requiring attention: {failures_fmt}")
+    if fallback_counts:
+        fallback_fmt = ", ".join([f"{reason}={count}" for reason, count in sorted(fallback_counts.items())])
+        logger.info(f"Historical fallback usage: {fallback_fmt}")
     return results

@@ -1,11 +1,20 @@
 name: Update PSX Data
 
-# Runs twice daily at 09:00 and 17:00 PKT (UTC+5 = 04:00 and 12:00 UTC).
-# Also available as a manual trigger from the Actions tab.
+# Daily close refresh plus monthly historical repair.
 on:
   schedule:
-    - cron: "0 4,12 * * *"
+    - cron: "45 12 * * *"    # 17:45 PKT daily close refresh
+    - cron: "15 13 1 * *"    # Monthly repair on day 1
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Pipeline mode"
+        type: choice
+        required: false
+        default: daily
+        options:
+          - daily
+          - repair
 
 # Allow the job to push commits back to the repository.
 permissions:
@@ -30,10 +39,65 @@ jobs:
       - name: Install pipeline dependencies
         run: pip install -r requirements.txt
 
+      - name: Resolve refresh mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.mode }}" = "repair" ]; then
+            echo "refresh_mode=repair" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "schedule" ] && [ "$(date -u +%H:%M)" = "13:15" ]; then
+            echo "refresh_mode=repair" >> "$GITHUB_OUTPUT"
+          else
+            echo "refresh_mode=daily" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check latest official close availability
+        id: market_close
+        if: steps.mode.outputs.refresh_mode == 'daily'
+        run: |
+          python - <<'PY'
+          import datetime
+          import json
+          import os
+          from zoneinfo import ZoneInfo
+          import requests
+          
+          output = os.environ["GITHUB_OUTPUT"]
+          should_run = "true"
+          reason = "latest_close_available"
+          
+          try:
+            resp = requests.get("https://dps.psx.com.pk/timeseries/eod/KSE100", timeout=20)
+            resp.raise_for_status()
+            payload = resp.json()
+            rows = payload.get("data") if isinstance(payload, dict) else None
+            if not rows:
+              should_run = "false"
+              reason = "no_close_data"
+            else:
+              latest_ts = rows[-1][0]
+              latest_date = datetime.datetime.fromtimestamp(latest_ts, ZoneInfo("Asia/Karachi")).date()
+              today_karachi = datetime.datetime.now(ZoneInfo("Asia/Karachi")).date()
+              if latest_date < today_karachi:
+                should_run = "false"
+                reason = f"stale_close_{latest_date.isoformat()}"
+          except Exception as exc:
+            reason = f"close_check_failed_{type(exc).__name__}"
+          
+          with open(output, "a", encoding="utf-8") as f:
+            f.write(f"should_run={should_run}\n")
+            f.write(f"reason={reason}\n")
+          PY
+
       - name: Run data pipeline
-        run: python run.py --pipeline
+        if: steps.mode.outputs.refresh_mode == 'repair' || steps.market_close.outputs.should_run == 'true'
+        run: python run.py --pipeline --mode ${{ steps.mode.outputs.refresh_mode }}
+
+      - name: Skip daily run when no new official close
+        if: steps.mode.outputs.refresh_mode == 'daily' && steps.market_close.outputs.should_run != 'true'
+        run: echo "Skipping daily refresh (${{ steps.market_close.outputs.reason }})"
 
       - name: Commit and push updated data
+        if: steps.mode.outputs.refresh_mode == 'repair' || steps.market_close.outputs.should_run == 'true'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

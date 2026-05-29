@@ -19,7 +19,7 @@ A complete analysis dashboard for the *Pakistan Stock Exchange*. It pulls real m
 | What | Source |
 |------|--------|
 | Company listings & sectors | [PSX Data Portal](https://dps.psx.com.pk) |
-| Daily OHLCV prices | PSX Data Portal via `psx-data-reader` |
+| Daily OHLCV prices | PSX Data Portal (`/timeseries/eod/{symbol}` primary, `/historical` repair fallback) |
 | KSE-100 Index | Yahoo Finance (`^KSE`) + PSX timeseries |
 | USD/PKR Exchange Rate | Yahoo Finance (`USDPKR=X`) |
 | CPI / Inflation | World Bank API → FRED fallback → bundled data |
@@ -45,6 +45,7 @@ python run.py --server          # Skip pipeline, start dashboard with existing d
 Other useful options:
 ```bash
 python run.py --pipeline              # Fetch data only, no web server
+python run.py --pipeline --mode repair # Historical backfill/repair mode
 python run.py --pipeline --max 10     # Quick test with just 10 stocks
 python run.py --pipeline --skip-fund  # Skip scraping fundamentals (faster)
 python run.py --port 8080             # Use a different port
@@ -67,17 +68,19 @@ The `freeze.py` script pre-renders every page (dashboard, all 600+ stock pages, 
 
 ## Automated Data Pipeline
 
-A GitHub Actions workflow (`.github/workflows/update-psx-data.yml`) keeps the live Netlify site up to date without any manual intervention.
+A GitHub Actions workflow (`.github/workflows/update-psx-data.yml`) keeps the live deployment up to date without manual intervention.
 
-**Schedule:** once daily on **weekdays at 17:30 PKT** (12:30 UTC).
+**Schedule:**
+- **Daily close refresh:** 17:45 PKT (12:45 UTC), with a PSX close-availability check so holidays/Eid closures are skipped automatically.
+- **Monthly repair run:** day 1 of each month (historical backfill/repair mode).
 
 **What it does:**
 1. Checks out the repository.
 2. Installs Python dependencies from `requirements.txt`.
-3. Runs `python run.py --pipeline` — fetches fresh price data, macro data, and fundamentals for all ~600 companies and writes the results to `data/csv/`.
+3. Runs `python run.py --pipeline --mode daily` for close refreshes, or `--mode repair` for monthly backfills.
 4. Stages the updated CSVs, commits, and pushes back to the repo with `[skip ci]`.
 5. The push triggers the host's automatic rebuild (Vercel or Netlify): it runs `python freeze.py` on its servers to regenerate all static HTML and JSON files from the new CSVs, and publishes the result.
-6. If the pipeline yields no new data (e.g. a market holiday), the commit step exits cleanly with no commit made.
+6. If there is no newly published official close (e.g. market holiday), the daily run is skipped and no commit is made.
 
 **Required repository setup:**
 
@@ -94,7 +97,7 @@ To trigger a manual refresh, go to **Actions → Update PSX Data → Run workflo
 - **Python** + Flask for the backend
 - **Plotly.js** for interactive charts
 - **pandas** + numpy + scipy for number crunching
-- **psx-data-reader** + yfinance for market data
+- **PSX Data Portal endpoints** + yfinance for market data
 - **World Bank API** + FRED for macro data
 - No heavy UI frameworks
 

@@ -2,6 +2,7 @@
 PSX Analyzer – Main Entry Point
 Usage:
     python run.py --pipeline              # Run data pipeline only
+    python run.py --pipeline --mode repair # Run monthly repair/backfill mode
     python run.py --server                # Start web server only
     python run.py                         # Run pipeline then start server
     python run.py --pipeline --max 10     # Test with 10 symbols
@@ -34,6 +35,10 @@ Examples:
                         help="Start web server only (no pipeline)")
     parser.add_argument("--skip-fund", action="store_true",
                         help="Skip fundamentals scraping (faster)")
+    parser.add_argument("--mode", choices=["daily", "repair"], default="daily",
+                        help="Refresh mode: daily close refresh or repair backfill")
+    parser.add_argument("--retry-symbols", default="",
+                        help="Comma-separated symbols allowed to use historical fallback")
     parser.add_argument("--max", type=int, default=None,
                         help="Max symbols to process (for testing)")
     parser.add_argument("--port", type=int, default=5000,
@@ -73,7 +78,9 @@ Examples:
         from backend.run_pipeline import run_pipeline as execute_pipeline
         success = execute_pipeline(
             skip_fundamentals=args.skip_fund,
-            max_symbols=args.max
+            max_symbols=args.max,
+            refresh_mode=args.mode,
+            fallback_retry_symbols=[s.strip().upper() for s in args.retry_symbols.split(",") if s.strip()]
         )
 
         if not success:
