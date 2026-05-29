@@ -42,9 +42,9 @@ jobs:
       - name: Resolve refresh mode
         id: mode
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" = "15 13 1 * *" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.mode }}" = "repair" ]; then
             echo "refresh_mode=repair" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.mode }}" = "repair" ]; then
+          elif [ "${{ github.event_name }}" = "schedule" ] && [ "$(date -u +%H:%M)" = "13:15" ]; then
             echo "refresh_mode=repair" >> "$GITHUB_OUTPUT"
           else
             echo "refresh_mode=daily" >> "$GITHUB_OUTPUT"

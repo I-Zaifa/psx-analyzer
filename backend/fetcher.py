@@ -363,6 +363,8 @@ def _fetch_history_timeseries(symbol: str,
     Primary: GET /timeseries/eod/{symbol}.
     Returns JSON with data as list of [timestamp, close, volume, ?].
     Only provides close+volume (no OHLC), but better than nothing.
+    Returns (dataframe_or_none, status_code).
+    status_code classifies outcomes such as ok, empty_payload, bad_json, 429_rate_limited, etc.
     """
     url = f"https://dps.psx.com.pk/timeseries/eod/{symbol}"
     try:
@@ -377,9 +379,7 @@ def _fetch_history_timeseries(symbol: str,
 
     try:
         data = resp.json()
-    except json.JSONDecodeError:
-        return None, "bad_json"
-    except ValueError:
+    except (json.JSONDecodeError, ValueError):
         return None, "bad_json"
 
     if not isinstance(data, dict):
@@ -429,7 +429,16 @@ def fetch_stock_history(symbol: str,
                         latest_market_date: Optional[datetime.date] = None,
                         refresh_mode: str = "daily",
                         fallback_retry_symbols: Optional[Set[str]] = None) -> Tuple[Optional[pd.DataFrame], Dict[str, str]]:
-    """Fetch historical OHLCV for a single symbol."""
+    """
+    Fetch historical OHLCV for a single symbol.
+
+    Args:
+        refresh_mode: "daily" keeps existing CSV when primary fails, "repair" allows historical fallback.
+        fallback_retry_symbols: symbols explicitly allowed to use historical fallback.
+
+    Returns:
+        (history_df_or_none, metadata_dict)
+    """
     meta: Dict[str, str] = {
         "primary_status": "not_run",
         "fallback_used": "no",
@@ -494,7 +503,13 @@ def fetch_all_stocks(tickers_df: pd.DataFrame,
                      latest_market_date: Optional[datetime.date] = None,
                      refresh_mode: str = "daily",
                      fallback_retry_symbols: Optional[List[str]] = None) -> Dict[str, pd.DataFrame]:
-    """Fetch historical data for all symbols with progress bar."""
+    """
+    Fetch historical data for all symbols with progress bar.
+
+    Args:
+        refresh_mode: "daily" for close refresh, "repair" for monthly backfill/repair.
+        fallback_retry_symbols: symbols explicitly allowed to use historical fallback.
+    """
     if "symbol" not in tickers_df.columns:
         logger.error("No 'symbol' column in tickers DataFrame")
         return {}
@@ -505,7 +520,7 @@ def fetch_all_stocks(tickers_df: pd.DataFrame,
     primary_failures = Counter()
     fallback_counts = Counter()
     end = datetime.date.today().strftime("%Y-%m-%d")
-    retry_symbols = set((fallback_retry_symbols or []))
+    retry_symbols = set(fallback_retry_symbols or [])
 
     logger.info(f"Fetching historical data for {len(symbols)} symbols (mode={refresh_mode})...")
 
