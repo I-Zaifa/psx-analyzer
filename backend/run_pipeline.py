@@ -73,10 +73,12 @@ def run_pipeline(skip_fundamentals: bool = False, max_symbols: int = None):
     # Get index prices for beta/correlation
     kse100 = macro_data.get("kse100")
     index_prices = None
+    latest_market_date = None
     if isinstance(kse100, dict):
         index_prices = None
     elif kse100 is not None and not kse100.empty and "close" in kse100.columns:
         index_prices = kse100["close"]
+        latest_market_date = kse100.index.max().date()
 
     risk_free_rate = macro_data.get("risk_free_rate", 0.10)
     cpi_data = macro_data.get("cpi")
@@ -85,7 +87,7 @@ def run_pipeline(skip_fundamentals: bool = False, max_symbols: int = None):
 
     # Step 3: Fetch historical stock data
     logger.info("\n[3/6] Fetching historical stock data...")
-    stocks_data = fetch_all_stocks(tickers_df)
+    stocks_data = fetch_all_stocks(tickers_df, latest_market_date=latest_market_date)
     if not stocks_data:
         logger.error("No stock data fetched. Aborting pipeline.")
         return False

@@ -19,7 +19,8 @@ from tqdm import tqdm
 from backend.config import (
     PSX_LISTINGS_URL, PSX_COMPANY_URL, PSX_HISTORICAL_URL,
     HEADERS, daily_request_delay,
-    REQUEST_TIMEOUT, HISTORY_START_DATE, CACHE_DIR, ERROR_LOG_FILE
+    REQUEST_TIMEOUT, HISTORY_START_DATE, CACHE_DIR, ERROR_LOG_FILE,
+    SYMBOLS_CSV_DIR
 )
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,50 @@ def _single_request(url: str, method: str = "GET", **kwargs) -> Optional[request
     except Exception as e:
         logger.warning(f"Request failed for {url}: {e}")
     return None
+
+
+def _load_existing_history(symbol: str) -> Optional[pd.DataFrame]:
+    """Load the on-disk symbol CSV if it already exists."""
+    path = SYMBOLS_CSV_DIR / f"{symbol}.csv"
+    if not path.exists():
+        return None
+    try:
+        df = pd.read_csv(path, parse_dates=["date"], index_col="date")
+        return _normalize_history_frame(df)
+    except Exception as e:
+        logger.debug(f"Existing history load failed for {symbol}: {e}")
+    return None
+
+
+def _normalize_history_frame(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize stock history to a daily, de-duplicated time series."""
+    if df is None or df.empty:
+        return pd.DataFrame()
+
+    df = df.copy()
+    if "date" in df.columns:
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
+        df = df.set_index("date")
+    else:
+        df.index = pd.to_datetime(df.index, errors="coerce")
+
+    df = df[df.index.notna()]
+    index = pd.DatetimeIndex(pd.to_datetime(df.index, errors="coerce"))
+    if index.tz is not None:
+        index = index.tz_localize(None)
+    df.index = index.normalize()
+    df.index.name = "date"
+
+    ohlcv = ["open", "high", "low", "close", "volume"]
+    existing = [c for c in ohlcv if c in df.columns]
+    if existing:
+        df = df[existing]
+        for c in existing:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    df = df.sort_index()
+    df = df[~df.index.duplicated(keep="last")]
+    return df
 
 
 # ── Fetch All Listed Companies ─────────────────────────────────────────────────
@@ -355,79 +400,49 @@ def _fetch_history_timeseries(symbol: str) -> Optional[pd.DataFrame]:
 
 def fetch_stock_history(symbol: str,
                         start: str = HISTORY_START_DATE,
-                        end: str = None) -> Optional[pd.DataFrame]:
+                        end: str = None,
+                        latest_market_date: Optional[datetime.date] = None) -> Optional[pd.DataFrame]:
     """Fetch historical OHLCV for a single symbol."""
     if end is None:
         end = datetime.date.today().strftime("%Y-%m-%d")
 
-    cache_file = CACHE_DIR / f"{symbol}.pkl"
-
-    # Check cache
-    if cache_file.exists():
-        try:
-            cached = pickle.load(open(cache_file, "rb"))
-            cache_time = cached.get("time")
-            if cache_time and (datetime.datetime.now() - cache_time).total_seconds() < 86400:
-                return cached["data"]
-        except Exception:
-            pass
+    existing_df = _load_existing_history(symbol)
+    if latest_market_date is not None and existing_df is not None and not existing_df.empty:
+        last_existing_date = existing_df.index.max().date()
+        if last_existing_date >= latest_market_date:
+            return existing_df
 
     # Primary: /timeseries/eod (fast, single request, close + volume)
     df = _fetch_history_timeseries(symbol)
+    df = _normalize_history_frame(df) if df is not None and not df.empty else pd.DataFrame()
 
     # Fallback: POST /historical only if the primary source fails.
-    if df is None or df.empty:
+    if df.empty:
+        if existing_df is not None and not existing_df.empty:
+            logger.info(f"No new daily history for {symbol}; keeping existing CSV")
+            return existing_df
         logger.info(f"Primary history fetch failed for {symbol}; using POST /historical fallback")
         df = _fetch_history_post(symbol, start, end)
+        df = _normalize_history_frame(df) if df is not None and not df.empty else pd.DataFrame()
 
-    if df is None or df.empty:
+    if df.empty:
         return None
 
-    # Normalize columns
-    df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
+    if existing_df is not None and not existing_df.empty:
+        last_existing_date = existing_df.index.max()
+        new_rows = df[df.index > last_existing_date]
+        if new_rows.empty:
+            return existing_df
+        df = pd.concat([existing_df, new_rows])
 
-    # Ensure date index
-    if "date" in df.columns:
-        df["date"] = pd.to_datetime(df["date"], errors="coerce")
-        df = df.set_index("date")
-    elif not isinstance(df.index, pd.DatetimeIndex):
-        df.index = pd.to_datetime(df.index, errors="coerce")
-
-    df.index.name = "date"
-
-    # Keep only OHLCV columns that exist
-    ohlcv = ["open", "high", "low", "close", "volume"]
-    existing = [c for c in ohlcv if c in df.columns]
-    df = df[existing]
-
-    # Convert to numeric
-    for c in existing:
-        df[c] = pd.to_numeric(df[c], errors="coerce")
-
-    # Drop rows with no close price
-    if "close" in df.columns:
-        df = df.dropna(subset=["close"])
-
-    # Sort by date
-    df = df.sort_index()
-
-    # Remove duplicates
-    df = df[~df.index.duplicated(keep="first")]
-
-    # Drop NaT index
-    df = df[df.index.notna()]
-
-    # Cache
-    try:
-        pickle.dump({"data": df, "time": datetime.datetime.now()}, open(cache_file, "wb"))
-    except Exception:
-        pass
+    df = _normalize_history_frame(df)
 
     return df
 
 
 def fetch_all_stocks(tickers_df: pd.DataFrame,
-                     start: str = HISTORY_START_DATE) -> Dict[str, pd.DataFrame]:
+                     start: str = HISTORY_START_DATE,
+                     latest_market_date: Optional[datetime.date] = None) -> Dict[str, pd.DataFrame]:
     """Fetch historical data for all symbols with progress bar."""
     if "symbol" not in tickers_df.columns:
         logger.error("No 'symbol' column in tickers DataFrame")
@@ -442,7 +457,14 @@ def fetch_all_stocks(tickers_df: pd.DataFrame,
 
     for symbol in tqdm(symbols, desc="Fetching stocks", unit="sym"):
         try:
-            df = fetch_stock_history(symbol, start, end)
+            existing_df = _load_existing_history(symbol)
+            if latest_market_date is not None and existing_df is not None and not existing_df.empty:
+                last_existing_date = existing_df.index.max().date()
+                if last_existing_date >= latest_market_date:
+                    results[symbol] = existing_df
+                    continue
+
+            df = fetch_stock_history(symbol, start, end, latest_market_date=latest_market_date)
             if df is not None and not df.empty and len(df) >= 5:
                 results[symbol] = df
             else:
