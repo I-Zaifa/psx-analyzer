@@ -15,8 +15,8 @@ for d in [CACHE_DIR, CSV_DIR, SYMBOLS_CSV_DIR, BUNDLED_DIR, LOG_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # ── Data Fetching ──────────────────────────────────────────────────────────────
-MIN_REQUEST_DELAY = 1.0      # randomized delay between daily fetches
-MAX_REQUEST_DELAY = 3.0
+MIN_REQUEST_DELAY = 0.25     # randomized delay between daily fetches
+MAX_REQUEST_DELAY = 0.75
 REQUEST_TIMEOUT = 30         # seconds
 HISTORY_START_DATE = "2010-01-01"
 
