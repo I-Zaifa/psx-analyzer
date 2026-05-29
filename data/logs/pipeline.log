@@ -381,3 +381,13 @@ b'<!DOCTYPE html>\r\n<html lang="en">\r\n<head>\r\n    <meta charset="utf-8">\r\
 [2026-02-08 10:18:01,036] INFO backend.run_pipeline: Sector CSV: C:\Users\Huzaifa\Desktop\Codium\psx-analyzer\data\csv\sectors.csv
 [2026-02-08 10:18:01,036] INFO backend.run_pipeline: Symbol CSVs: 606
 [2026-02-08 10:18:01,036] INFO backend.run_pipeline: ============================================================
+[2026-05-29 08:39:31,560] INFO backend.run_pipeline: ============================================================
+[2026-05-29 08:39:31,560] INFO backend.run_pipeline: PSX Analyzer Pipeline Starting
+[2026-05-29 08:39:31,560] INFO backend.run_pipeline: Time: 2026-05-29T08:39:31.560395
+[2026-05-29 08:39:31,560] INFO backend.run_pipeline: ============================================================
+[2026-05-29 08:39:31,560] INFO backend.run_pipeline: 
+[1/6] Fetching listed companies...
+[2026-05-29 08:39:31,584] WARNING backend.fetcher: psx-data-reader tickers() failed: File https://dps.psx.com.pk/symbols does not exist
+[2026-05-29 08:39:31,586] WARNING backend.fetcher: Request failed for https://dps.psx.com.pk/listings: HTTPSConnectionPool(host='dps.psx.com.pk', port=443): Max retries exceeded with url: /listings (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x7ff5b3ae1f40>: Failed to resolve 'dps.psx.com.pk' ([Errno -5] No address associated with hostname)"))
+[2026-05-29 08:39:31,586] ERROR backend.fetcher: Could not fetch tickers from any source
+[2026-05-29 08:39:31,587] ERROR backend.run_pipeline: No tickers found. Aborting pipeline.
