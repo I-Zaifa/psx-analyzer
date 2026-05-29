@@ -38,19 +38,25 @@ def setup_logging():
     root.addHandler(fh)
 
 
-def run_pipeline(skip_fundamentals: bool = False, max_symbols: int = None):
+def run_pipeline(skip_fundamentals: bool = False,
+                 max_symbols: int = None,
+                 refresh_mode: str = "daily",
+                 fallback_retry_symbols: list[str] | None = None):
     """
     Run the complete data pipeline.
 
     Args:
         skip_fundamentals: Skip fundamentals scraping (faster run)
         max_symbols: Limit number of symbols to process (for testing)
+        refresh_mode: "daily" for close refresh, "repair" for backfill/repair
+        fallback_retry_symbols: symbols explicitly allowed to use historical fallback
     """
     setup_logging()
     start_time = time.time()
     logger.info("=" * 60)
     logger.info("PSX Analyzer Pipeline Starting")
     logger.info(f"Time: {datetime.datetime.now().isoformat()}")
+    logger.info(f"Refresh mode: {refresh_mode}")
     logger.info("=" * 60)
 
     # Step 1: Fetch all tickers
@@ -87,7 +93,12 @@ def run_pipeline(skip_fundamentals: bool = False, max_symbols: int = None):
 
     # Step 3: Fetch historical stock data
     logger.info("\n[3/6] Fetching historical stock data...")
-    stocks_data = fetch_all_stocks(tickers_df, latest_market_date=latest_market_date)
+    stocks_data = fetch_all_stocks(
+        tickers_df,
+        latest_market_date=latest_market_date,
+        refresh_mode=refresh_mode,
+        fallback_retry_symbols=fallback_retry_symbols
+    )
     if not stocks_data:
         logger.error("No stock data fetched. Aborting pipeline.")
         return False
@@ -152,5 +163,15 @@ if __name__ == "__main__":
                         help="Skip fundamentals scraping")
     parser.add_argument("--max-symbols", type=int, default=None,
                         help="Limit number of symbols (for testing)")
+    parser.add_argument("--mode", choices=["daily", "repair"], default="daily",
+                        help="Refresh mode: daily close refresh or monthly repair")
+    parser.add_argument("--retry-symbols", default="",
+                        help="Comma-separated symbols that may use historical fallback")
     args = parser.parse_args()
-    run_pipeline(skip_fundamentals=args.skip_fundamentals, max_symbols=args.max_symbols)
+    retry_symbols = [s.strip().upper() for s in args.retry_symbols.split(",") if s.strip()]
+    run_pipeline(
+        skip_fundamentals=args.skip_fundamentals,
+        max_symbols=args.max_symbols,
+        refresh_mode=args.mode,
+        fallback_retry_symbols=retry_symbols
+    )

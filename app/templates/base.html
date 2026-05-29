@@ -32,7 +32,7 @@
                     <circle cx="24" cy="16" r="2" fill="white"/>
                 </svg>
                 <span>PSX Analyzer</span>
-                {% if data_as_of %}<span class="data-date-badge">as of {{ data_as_of }}</span>{% endif %}
+                {% if data_as_of %}<span class="data-date-badge">latest official close: {{ data_as_of }}</span>{% endif %}
             </a>
             <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -74,7 +74,7 @@
         var diffDays = (Date.now() - asOf.getTime()) / 86400000;
         if (diffDays > 4) {
             var el = document.getElementById('staleBannerMsg');
-            if (el) el.textContent = 'Data as of {{ data_as_of }}. The automated update runs Mon\u2013Fri at 17:45 PKT.';
+            if (el) el.textContent = 'Latest official close is {{ data_as_of }}. Daily refresh runs after market close and skips exchange holidays automatically.';
             var banner = document.getElementById('staleBanner');
             if (banner) banner.style.display = '';
         }
