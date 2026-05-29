@@ -1,6 +1,8 @@
 # PSX Analyzer
 A complete analysis dashboard for the *Pakistan Stock Exchange*. It pulls real market data for 600+ listed companies, beep-boops the numbers, and gives you an interactive web dashboard you can browse locally or deploy to where ever the fuck.
 
+## Made using Antigravity and updated/fixes done by copilot. Run using Github actions.
+
 ---
 
 ## includes:
