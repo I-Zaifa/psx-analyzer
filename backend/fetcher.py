@@ -95,97 +95,97 @@ def _normalize_history_frame(df: pd.DataFrame) -> pd.DataFrame:
 
 # ── Fetch All Listed Companies ─────────────────────────────────────────────────
 
-def fetch_tickers_psx_lib() -> Optional[pd.DataFrame]:
-    """Try psx-data-reader library first."""
-    try:
-        from psx import tickers as psx_tickers
-        df = psx_tickers()
-        if df is not None and not df.empty:
-            logger.info(f"psx-data-reader returned {len(df)} tickers")
-            return df
-    except Exception as e:
-        logger.warning(f"psx-data-reader tickers() failed: {e}")
+def fetch_tickers_api() -> Optional[pd.DataFrame]:
+    """Try fetching tickers from JSON APIs directly."""
+    endpoints = [
+        "https://dps.psx.com.pk/api/symbols",
+        "https://dps.psx.com.pk/symbols",
+    ]
+    for url in endpoints:
+        try:
+            resp = _single_request(url)
+            if resp and resp.status_code == 200:
+                data = resp.json()
+                if isinstance(data, list) and data and isinstance(data[0], dict):
+                    sym_key = next((k for k in data[0].keys() if k.lower() in ('symbol', 'ticker')), None)
+                    if sym_key:
+                        rows = [{"Symbol": item[sym_key], "Company": item.get("name", item.get("company", ""))} for item in data]
+                        df = pd.DataFrame(rows)
+                        if not df.empty:
+                            logger.info(f"API {url} returned {len(df)} tickers")
+                            return df
+        except Exception as e:
+            logger.debug(f"API {url} fetch failed: {e}")
     return None
 
 
 def fetch_tickers_scrape() -> Optional[pd.DataFrame]:
-    """Fallback: scrape dps.psx.com.pk/listings."""
-    try:
-        resp = _single_request(PSX_LISTINGS_URL)
-        if resp is None:
-            return None
+    """Fallback: scrape PSX pages for company links."""
+    urls = [PSX_LISTINGS_URL, "https://dps.psx.com.pk/market-watch", "https://dps.psx.com.pk/screener"]
+    MAX_SYMBOL_LENGTH = 15
+    
+    for url in urls:
+        try:
+            resp = _single_request(url)
+            if resp is None:
+                continue
 
-        soup = BeautifulSoup(resp.text, "html.parser")
-        table = soup.find("table")
-        if table is None:
-            # Try parsing the page differently - PSX uses dynamic content
-            # Look for script tags with JSON data
-            scripts = soup.find_all("script")
-            for script in scripts:
-                if script.string and "listing" in script.string.lower():
-                    logger.info("Found listing data in script tag")
-                    break
-
-            # Alternative: try the sector summary page for company list
-            return _fetch_tickers_from_sectors()
-
-        rows = []
-        headers_row = table.find("thead")
-        if headers_row:
-            cols = [th.get_text(strip=True) for th in headers_row.find_all("th")]
-        else:
-            cols = ["Symbol", "Company", "Sector", "Status"]
-
-        for tr in table.find_all("tr")[1:]:
-            tds = tr.find_all("td")
-            if len(tds) >= 2:
-                row = {}
-                for i, td in enumerate(tds):
-                    if i < len(cols):
-                        row[cols[i]] = td.get_text(strip=True)
-                    # Also check for links containing symbol
-                    a_tag = td.find("a")
-                    if a_tag and "href" in a_tag.attrs:
-                        href = a_tag["href"]
-                        if "/company/" in href:
-                            row["Symbol"] = href.split("/company/")[-1].strip("/")
-                rows.append(row)
-
-        if rows:
-            df = pd.DataFrame(rows)
-            logger.info(f"Scraped {len(df)} tickers from PSX listings")
-            return df
-    except Exception as e:
-        logger.error(f"Scraping PSX listings failed: {e}")
-    return None
+            soup = BeautifulSoup(resp.text, "html.parser")
+            rows = []
+            
+            # Find all links pointing to companies (e.g. href="/company/SYS")
+            for a_tag in soup.find_all("a"):
+                if "href" in a_tag.attrs:
+                    href = a_tag["href"]
+                    if "/company/" in href:
+                        symbol = href.split("/company/")[-1].strip("/").upper()
+                        # Extract company name if it's not just the symbol
+                        name = a_tag.get_text(strip=True)
+                        if symbol and len(symbol) <= MAX_SYMBOL_LENGTH:
+                            rows.append({"Symbol": symbol, "Company": name if name else symbol})
+                            
+            if rows:
+                df = pd.DataFrame(rows).drop_duplicates(subset=["Symbol"])
+                # basic cleanup of symbol strings
+                df = df[df["Symbol"].str.match(r'^[A-Z0-9]+$', na=False)]
+                if not df.empty:
+                    logger.info(f"Scraped {len(df)} tickers from {url}")
+                    return df
+        except Exception as e:
+            logger.error(f"Scraping {url} failed: {e}")
+            
+    return _fetch_tickers_from_sectors()
 
 
 def _fetch_tickers_from_sectors() -> Optional[pd.DataFrame]:
     """Try getting company list from sector summary page."""
+    MAX_SYMBOL_LENGTH = 15
     try:
         resp = _single_request("https://dps.psx.com.pk/sector-summary")
         if resp is None:
             return None
         soup = BeautifulSoup(resp.text, "html.parser")
-        # Parse sector data
         rows = []
-        tables = soup.find_all("table")
-        for table in tables:
-            for tr in table.find_all("tr"):
-                tds = tr.find_all("td")
-                if tds:
-                    row_data = [td.get_text(strip=True) for td in tds]
-                    if len(row_data) >= 2:
-                        rows.append(row_data)
+        for a_tag in soup.find_all("a"):
+            if "href" in a_tag.attrs:
+                href = a_tag["href"]
+                if "/company/" in href:
+                    symbol = href.split("/company/")[-1].strip("/").upper()
+                    name = a_tag.get_text(strip=True)
+                    if symbol and len(symbol) <= MAX_SYMBOL_LENGTH:
+                        rows.append({"Symbol": symbol, "Company": name if name else symbol})
         if rows:
-            logger.info(f"Found {len(rows)} entries from sector summary")
+            df = pd.DataFrame(rows).drop_duplicates(subset=["Symbol"])
+            df = df[df["Symbol"].str.match(r'^[A-Z0-9]+$', na=False)]
+            logger.info(f"Found {len(df)} symbols from sector summary")
+            return df
     except Exception as e:
         logger.warning(f"Sector summary scrape failed: {e}")
     return None
 
 
 def fetch_all_tickers() -> pd.DataFrame:
-    """Get all listed company tickers. Tries library first, then scraping."""
+    """Get all listed company tickers. Tries API first, then scraping."""
     cache_file = CACHE_DIR / "tickers.pkl"
 
     # Try cache first (valid for 24h)
@@ -199,8 +199,8 @@ def fetch_all_tickers() -> pd.DataFrame:
         except Exception:
             pass
 
-    # Try psx-data-reader
-    df = fetch_tickers_psx_lib()
+    # Try API first
+    df = fetch_tickers_api()
 
     # Fallback to scraping
     if df is None or df.empty:
