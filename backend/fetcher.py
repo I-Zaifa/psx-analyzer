@@ -122,6 +122,7 @@ def fetch_tickers_api() -> Optional[pd.DataFrame]:
 def fetch_tickers_scrape() -> Optional[pd.DataFrame]:
     """Fallback: scrape PSX pages for company links."""
     urls = [PSX_LISTINGS_URL, "https://dps.psx.com.pk/market-watch", "https://dps.psx.com.pk/screener"]
+    MAX_SYMBOL_LENGTH = 15
     
     for url in urls:
         try:
@@ -140,13 +141,13 @@ def fetch_tickers_scrape() -> Optional[pd.DataFrame]:
                         symbol = href.split("/company/")[-1].strip("/").upper()
                         # Extract company name if it's not just the symbol
                         name = a_tag.get_text(strip=True)
-                        if symbol and len(symbol) <= 15:
+                        if symbol and len(symbol) <= MAX_SYMBOL_LENGTH:
                             rows.append({"Symbol": symbol, "Company": name if name else symbol})
                             
             if rows:
                 df = pd.DataFrame(rows).drop_duplicates(subset=["Symbol"])
                 # basic cleanup of symbol strings
-                df = df[df["Symbol"].str.match(r'^[A-Z0-9]+$')]
+                df = df[df["Symbol"].str.match(r'^[A-Z0-9]+$', na=False)]
                 if not df.empty:
                     logger.info(f"Scraped {len(df)} tickers from {url}")
                     return df
@@ -158,6 +159,7 @@ def fetch_tickers_scrape() -> Optional[pd.DataFrame]:
 
 def _fetch_tickers_from_sectors() -> Optional[pd.DataFrame]:
     """Try getting company list from sector summary page."""
+    MAX_SYMBOL_LENGTH = 15
     try:
         resp = _single_request("https://dps.psx.com.pk/sector-summary")
         if resp is None:
@@ -170,11 +172,11 @@ def _fetch_tickers_from_sectors() -> Optional[pd.DataFrame]:
                 if "/company/" in href:
                     symbol = href.split("/company/")[-1].strip("/").upper()
                     name = a_tag.get_text(strip=True)
-                    if symbol and len(symbol) <= 15:
+                    if symbol and len(symbol) <= MAX_SYMBOL_LENGTH:
                         rows.append({"Symbol": symbol, "Company": name if name else symbol})
         if rows:
             df = pd.DataFrame(rows).drop_duplicates(subset=["Symbol"])
-            df = df[df["Symbol"].str.match(r'^[A-Z0-9]+$')]
+            df = df[df["Symbol"].str.match(r'^[A-Z0-9]+$', na=False)]
             logger.info(f"Found {len(df)} symbols from sector summary")
             return df
     except Exception as e:
