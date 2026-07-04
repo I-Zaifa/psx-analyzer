@@ -17,30 +17,25 @@
         About This Project
     </div>
     <p class="text-sm" style="margin-bottom:0.75rem">
-        PSX Analyzer is a quantitative analysis tool for the Pakistan Stock Exchange. It fetches daily price and volume data for every listed equity, computes standard financial metrics, and presents the results in an interactive dashboard. The entire pipeline — data collection, computation, and visualization — is written in Python and open-sourced in the repository.
+        PSX Analyzer is a quantitative analysis tool for the Pakistan Stock Exchange. It computes standard financial metrics and presents them in an interactive web interface backed by a static historical dataset.
     </p>
 
     <div class="section-title" style="margin-bottom:0.75rem">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Live Updates &amp; Automated Pipeline
+        Data Update Notice
     </div>
     <p class="text-sm" style="margin-bottom:0.5rem">
-        This site is no longer a one-time static snapshot — it is rebuilt automatically every trading day. A GitHub Actions workflow fetches fresh data from PSX, Yahoo Finance, and macro APIs, commits the updated CSVs to the repository, and Netlify detects the commit and rebuilds the entire static site from scratch.
+        <strong>Support ended in June 2026.</strong> Automated live/delayed PSX data updates have been discontinued. PSX does not permit delayed data usage in this context (including non-commercial and educational use). We believe this restriction should apply to live licensed feeds only, but we are complying with the current policy. The site remains available with a static, historical dataset and no automatic data refresh.
     </p>
     <table class="methodology-table" style="margin-bottom:0.75rem">
-        <thead><tr><th>What</th><th>Detail</th></tr></thead>
+        <thead><tr><th>What</th><th>Status</th></tr></thead>
         <tbody>
-            <tr><td><strong>Schedule</strong></td><td>Monday – Friday, <strong>17:45 PKT</strong> (12:45 UTC) primary run</td></tr>
-            <tr><td><strong>Retry 1</strong></td><td>17:55 PKT (~10 min later) — runs if the primary failed or produced no data</td></tr>
-            <tr><td><strong>Retry 2</strong></td><td>18:55 PKT (~1 hour later) — final fallback for the day</td></tr>
-            <tr><td><strong>Idempotent</strong></td><td>Later runs skip committing if an earlier run already succeeded today</td></tr>
-            <tr><td><strong>Holidays / weekends</strong></td><td>Pipeline runs but finds no new market data and exits without committing</td></tr>
-            <tr><td><strong>If all runs fail</strong></td><td>The previous build stays live; data will be stale until the next successful run</td></tr>
+            <tr><td><strong>Automated pipeline</strong></td><td>Disabled (June 2026)</td></tr>
+            <tr><td><strong>Scheduled refresh jobs</strong></td><td>Disabled</td></tr>
+            <tr><td><strong>Data mode</strong></td><td>Static historical dataset</td></tr>
+            <tr><td><strong>Site availability</strong></td><td>Online for research and archival analysis</td></tr>
         </tbody>
     </table>
-    <p class="text-sm" style="margin-bottom:0.75rem">
-        A notice appears at the top of every page when the site data appears to be more than four days old, so you know at a glance if the pipeline has not run recently.
-    </p>
 
     <div class="section-title" style="margin-bottom:0.75rem">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -87,9 +82,9 @@
         Disclosure &amp; Limitations
     </div>
     <ul class="methodology-list" style="margin-left: 1rem;">
-        <li>&ndash; Price data comes from the PSX public data portal. It may contain gaps, errors, or delays. Corporate actions (splits, bonuses) might not be adjusted where data was not properly available.</li>
+        <li>&ndash; Price data comes from the PSX public data portal. It may contain gaps, errors, or delays. Corporate actions (splits, bonuses) might not be adjusted where data was not properly reflected in source files.</li>
         <li>&ndash; This is a research and analytical tool, not financial advice. All code is open and available for download below. Verify any result independently before relying on it.</li>
-        <li>&ndash; Macro data (CPI, T-bill) has triple fallback: live API, secondary API, bundled CSV. If all live sources fail, bundled data ships with the project.</li>
+        <li>&ndash; Macro data (CPI, policy-rate proxies) has fallback support through bundled CSVs where applicable.</li>
         <li>&ndash; This project was built in it's entirety using <em>Windsurf</em>.</li>
     </ul>
 </div>
@@ -106,11 +101,11 @@
     <a href="/download/{{ f.path }}" class="download-card">
         <div class="download-icon">
             {% if f.type == 'master' %}
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             {% elif f.type == 'sectors' %}
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             {% else %}
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8a2 2 0 0 0-2-2H13a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3.7a2 2 0 0 0 2-2Z"/></svg>
             {% endif %}
         </div>
         <div class="download-info">
@@ -131,7 +126,7 @@
 
 {% endif %}
 
-<!-- ── Source Code ─────────────────────────────────────────────────────────── -->
+<!-- ── Source Code ───────────────────────────────────────────────────────── -->
 {% if source_files %}
 <div class="section-title mt-4">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
@@ -158,7 +153,7 @@
 <div class="empty-state">
     <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     <h3>No Files Available</h3>
-    <p>Run the data pipeline first to generate output files.</p>
+    <p>Dataset generation is currently offline. Existing static files remain available for download.</p>
 </div>
 {% endif %}
 {% endblock %}
