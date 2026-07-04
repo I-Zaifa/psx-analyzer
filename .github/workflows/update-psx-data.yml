@@ -1,115 +1,115 @@
-name: Update PSX Data
+# name: Update PSX Data
 
-# Daily close refresh plus monthly historical repair.
-on:
-  schedule:
-    - cron: "45 12 * * *"    # 17:45 PKT daily close refresh
-    - cron: "15 13 1 * *"    # Monthly repair on day 1
-  workflow_dispatch:
-    inputs:
-      mode:
-        description: "Pipeline mode"
-        type: choice
-        required: false
-        default: daily
-        options:
-          - daily
-          - repair
+# # Daily close refresh plus monthly historical repair.
+# on:
+#   schedule:
+#     - cron: "45 12 * * *"    # 17:45 PKT daily close refresh
+#     - cron: "15 13 1 * *"    # Monthly repair on day 1
+#   workflow_dispatch:
+#     inputs:
+#       mode:
+#         description: "Pipeline mode"
+#         type: choice
+#         required: false
+#         default: daily
+#         options:
+#           - daily
+#           - repair
 
-# Allow the job to push commits back to the repository.
-permissions:
-  contents: write
+# # Allow the job to push commits back to the repository.
+# permissions:
+#   contents: write
 
-jobs:
-  refresh-data:
-    name: Refresh market data
-    runs-on: ubuntu-latest
-    timeout-minutes: 90   # full pipeline takes ~15-30 min; 90 min is a safe ceiling
+# jobs:
+#   refresh-data:
+#     name: Refresh market data
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 90   # full pipeline takes ~15-30 min; 90 min is a safe ceiling
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
+#       - name: Set up Python 3.11
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: "3.11"
+#           cache: "pip"
 
-      - name: Install pipeline dependencies
-        run: pip install -r requirements.txt
+#       - name: Install pipeline dependencies
+#         run: pip install -r requirements.txt
 
-      - name: Resolve refresh mode
-        id: mode
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.mode }}" = "repair" ]; then
-            echo "refresh_mode=repair" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" = "schedule" ] && [ "$(date -u +%H:%M)" = "13:15" ]; then
-            echo "refresh_mode=repair" >> "$GITHUB_OUTPUT"
-          else
-            echo "refresh_mode=daily" >> "$GITHUB_OUTPUT"
-          fi
+#       - name: Resolve refresh mode
+#         id: mode
+#         run: |
+#           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.mode }}" = "repair" ]; then
+#             echo "refresh_mode=repair" >> "$GITHUB_OUTPUT"
+#           elif [ "${{ github.event_name }}" = "schedule" ] && [ "$(date -u +%H:%M)" = "13:15" ]; then
+#             echo "refresh_mode=repair" >> "$GITHUB_OUTPUT"
+#           else
+#             echo "refresh_mode=daily" >> "$GITHUB_OUTPUT"
+#           fi
 
-      - name: Check latest official close availability
-        id: market_close
-        if: steps.mode.outputs.refresh_mode == 'daily'
-        run: |
-          python - <<'PY'
-          import datetime
-          import json
-          import os
-          from zoneinfo import ZoneInfo
-          import requests
+#       - name: Check latest official close availability
+#         id: market_close
+#         if: steps.mode.outputs.refresh_mode == 'daily'
+#         run: |
+#           python - <<'PY'
+#           import datetime
+#           import json
+#           import os
+#           from zoneinfo import ZoneInfo
+#           import requests
           
-          output = os.environ["GITHUB_OUTPUT"]
-          should_run = "true"
-          reason = "latest_close_available"
+#           output = os.environ["GITHUB_OUTPUT"]
+#           should_run = "true"
+#           reason = "latest_close_available"
           
-          try:
-            resp = requests.get("https://dps.psx.com.pk/timeseries/eod/KSE100", timeout=20)
-            resp.raise_for_status()
-            payload = resp.json()
-            rows = payload.get("data") if isinstance(payload, dict) else None
-            if not rows:
-              should_run = "false"
-              reason = "no_close_data"
-            else:
-              latest_ts = rows[-1][0]
-              latest_date = datetime.datetime.fromtimestamp(latest_ts, ZoneInfo("Asia/Karachi")).date()
-              today_karachi = datetime.datetime.now(ZoneInfo("Asia/Karachi")).date()
-              if latest_date < today_karachi:
-                should_run = "false"
-                reason = f"stale_close_{latest_date.isoformat()}"
-          except Exception as exc:
-            reason = f"close_check_failed_{type(exc).__name__}"
+#           try:
+#             resp = requests.get("https://dps.psx.com.pk/timeseries/eod/KSE100", timeout=20)
+#             resp.raise_for_status()
+#             payload = resp.json()
+#             rows = payload.get("data") if isinstance(payload, dict) else None
+#             if not rows:
+#               should_run = "false"
+#               reason = "no_close_data"
+#             else:
+#               latest_ts = rows[-1][0]
+#               latest_date = datetime.datetime.fromtimestamp(latest_ts, ZoneInfo("Asia/Karachi")).date()
+#               today_karachi = datetime.datetime.now(ZoneInfo("Asia/Karachi")).date()
+#               if latest_date < today_karachi:
+#                 should_run = "false"
+#                 reason = f"stale_close_{latest_date.isoformat()}"
+#           except Exception as exc:
+#             reason = f"close_check_failed_{type(exc).__name__}"
           
-          with open(output, "a", encoding="utf-8") as f:
-            f.write(f"should_run={should_run}\n")
-            f.write(f"reason={reason}\n")
-          PY
+#           with open(output, "a", encoding="utf-8") as f:
+#             f.write(f"should_run={should_run}\n")
+#             f.write(f"reason={reason}\n")
+#           PY
 
-      - name: Run data pipeline
-        if: steps.mode.outputs.refresh_mode == 'repair' || steps.market_close.outputs.should_run == 'true'
-        run: python run.py --pipeline --mode ${{ steps.mode.outputs.refresh_mode }}
+#       - name: Run data pipeline
+#         if: steps.mode.outputs.refresh_mode == 'repair' || steps.market_close.outputs.should_run == 'true'
+#         run: python run.py --pipeline --mode ${{ steps.mode.outputs.refresh_mode }}
 
-      - name: Skip daily run when no new official close
-        if: steps.mode.outputs.refresh_mode == 'daily' && steps.market_close.outputs.should_run != 'true'
-        run: echo "Skipping daily refresh (${{ steps.market_close.outputs.reason }})"
+#       - name: Skip daily run when no new official close
+#         if: steps.mode.outputs.refresh_mode == 'daily' && steps.market_close.outputs.should_run != 'true'
+#         run: echo "Skipping daily refresh (${{ steps.market_close.outputs.reason }})"
 
-      - name: Commit and push updated data
-        if: steps.mode.outputs.refresh_mode == 'repair' || steps.market_close.outputs.should_run == 'true'
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+#       - name: Commit and push updated data
+#         if: steps.mode.outputs.refresh_mode == 'repair' || steps.market_close.outputs.should_run == 'true'
+#         run: |
+#           git config user.name  "github-actions[bot]"
+#           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Stage only the canonical CSV outputs; ignore cache, logs, and build artefacts.
-          git add data/csv/
+#           # Stage only the canonical CSV outputs; ignore cache, logs, and build artefacts.
+#           git add data/csv/
 
-          # Exit cleanly when nothing changed (idempotent runs).
-          if git diff --cached --quiet; then
-            echo "No data changes — nothing to commit."
-            exit 0
-          fi
+#           # Exit cleanly when nothing changed (idempotent runs).
+#           if git diff --cached --quiet; then
+#             echo "No data changes — nothing to commit."
+#             exit 0
+#           fi
 
-          git commit -m "chore: refresh PSX market data [skip ci]"
-          git push
+#           git commit -m "chore: refresh PSX market data [skip ci]"
+#           git push
