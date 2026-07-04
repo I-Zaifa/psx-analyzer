@@ -74,7 +74,7 @@
         var diffDays = (Date.now() - asOf.getTime()) / 86400000;
         if (diffDays > 4) {
             var el = document.getElementById('staleBannerMsg');
-            if (el) el.textContent = 'Latest official close is {{ data_as_of }}. Daily refresh runs after market close and skips exchange holidays automatically.';
+            if (el) el.textContent = 'SUPPORT ENDED. Automated delayed updates have been discontinued due to PSX policy which seems to be unnecessarily restricted on data usage.';
             var banner = document.getElementById('staleBanner');
             if (banner) banner.style.display = '';
         }
