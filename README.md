@@ -1,114 +1,85 @@
 # PSX Analyzer
-A complete analysis dashboard for the *Pakistan Stock Exchange*. It pulls real market data for 600+ listed companies, beep-boops the numbers, and gives you an interactive web dashboard you can browse locally or deploy to where ever the fuck.
+A complete analysis dashboard for the *Pakistan Stock Exchange* based on a static historical dataset. It analyzes 600+ listed companies and provides an interactive web dashboard for research and archival study.
 
-## Made using Antigravity and updated/fixes done by copilot. Run using Github actions.
+## Made using Antigravity and updated/fixes done by copilot.
 
 ---
 
-## includes:
+## Includes
 - **Every listed company on PSX** — not a sample, the whole exchange
 - **Interactive charts** — price history with moving averages, drawdown, cumulative returns, volume analysis
-- **Stock screener** — search, filter, sort by any metric across all 600+ companies
+- **Stock screener** — search, filter, sort by key metrics across all 600+ companies
 - **Sector analysis** — treemap visualization, performance rankings, best/worst performers per sector
 - **Macro overlays** — KSE-100 index, USD/PKR exchange rate, CPI inflation, SBP policy rate
 - **Side-by-side comparison** — pick up to 5 stocks, see them normalized on one chart
-- **CSV downloads** — grab the raw data for your own analysis in Excel, Python, R, whatever
-- **Full source code downloads** — every Python file available directly from the app
-- **Methodology & disclosure** — data sources, metric definitions, and limitations documented on-site
-- **Works offline** — it's a PWA, install it on your phone or desktop
+- **CSV downloads** — raw data for your own analysis in Excel, Python, R, etc.
+- **Full source code downloads** — Python files available directly from the app
+- **Methodology & disclosure** — sources, metric definitions, and limitations documented on-site
+- **Works offline** — it's a PWA, installable on phone or desktop
 
-## Data - Sources
+## Data Update Policy (Important)
+**Support ended in June 2026.** Automated live/delayed PSX data updates have been discontinued.
+
+PSX does not permit delayed data usage in this context (including non-commercial and educational use). We believe this is a policy decision that should apply to live licensed feeds only, but we are complying with the current policy.
+
+The site remains online with a static historical dataset for archival and analytical use. Scheduled GitHub Actions refresh jobs have been disabled.
+
+## Data Sources
 | What | Source |
 |------|--------|
 | Company listings & sectors | [PSX Data Portal](https://dps.psx.com.pk) |
-| Daily OHLCV prices | PSX Data Portal (`/timeseries/eod/{symbol}` primary, `/historical` repair fallback) |
+| Daily OHLCV prices | PSX Data Portal (`/timeseries/eod/{symbol}` primary, `/historical` fallback) |
 | KSE-100 Index | Yahoo Finance (`^KSE`) + PSX timeseries |
 | USD/PKR Exchange Rate | Yahoo Finance (`USDPKR=X`) |
 | CPI / Inflation | World Bank API → FRED fallback → bundled data |
 | SBP Policy Rate | FRED → bundled data |
 | Fundamentals (P/E, EPS, etc.) | PSX Data Portal company pages |
 
-All macro data has multiple fallback sources so nothing breaks if one API is down.
-
 ## Getting Started
 
 ```bash
 # 1. Install dependencies
 pip install -r requirements.txt
-# 2. Run the full pipeline (fetches data + starts dashboard)
-python run.py
-# That's it. Open http://localhost:5000 in your browser.
-```
-If you just want to explore data that's already been fetched:
-```bash
-python run.py --server          # Skip pipeline, start dashboard with existing data
+# 2. Run the app with existing local data
+python run.py --server
+# Open http://localhost:5000 in your browser
 ```
 
-Other useful options:
+If you need to run pipeline utilities manually for maintenance/testing:
 ```bash
-python run.py --pipeline              # Fetch data only, no web server
+python run.py --pipeline              # Data pipeline only
 python run.py --pipeline --mode repair # Historical backfill/repair mode
-python run.py --pipeline --max 10     # Quick test with just 10 stocks
-python run.py --pipeline --skip-fund  # Skip scraping fundamentals (faster)
-python run.py --port 8080             # Use a different port
-python run.py --icons                 # Generate PWA icon files
+python run.py --pipeline --max 10     # Quick test with 10 stocks
+python run.py --pipeline --skip-fund  # Skip fundamentals scraping
+python run.py --port 8080             # Alternate port
+python run.py --icons                 # Generate PWA icons
 ```
 
-The full pipeline takes about 15–30 minutes to pull data for all ~600 companies.
---
-The `freeze.py` script pre-renders every page (dashboard, all 600+ stock pages, screener, sectors, downloads) into plain HTML with embedded Plotly charts. The Compare page works fully on the static site too: it fetches pre-built JSON data client-side and renders charts in the browser. No server, no database, just static files that load fast.
+The `freeze.py` script pre-renders every page (dashboard, stock pages, screener, sectors, downloads) into plain HTML with embedded Plotly charts. The Compare page works on the static site by fetching pre-built JSON and rendering in-browser.
 
 ## Deploy to Vercel
 1. Import the repo in Vercel (GitHub integration).
-2. Vercel will read `vercel.json` and:
-   - install with `python -m venv .venv && .venv/bin/pip install -r requirements-build.txt`
-   - build with `.venv/bin/python freeze.py`
-   - the virtualenv avoids PEP 668 restrictions in managed Python runtimes
-   - publish the `build/` directory
-3. Ensure the project is set to auto-deploy on `main` so the scheduled data refresh pushes trigger a rebuild.
+2. Vercel reads `vercel.json` and:
+   - installs with `python -m venv .venv && .venv/bin/pip install -r requirements-build.txt`
+   - builds with `.venv/bin/python freeze.py`
+   - publishes the `build/` directory
+3. Enable auto-deploy on `main` for normal website deployments.
 4. If prompted for a Python version, use **3.11**.
 
-## Automated Data Pipeline
-
-A GitHub Actions workflow (`.github/workflows/update-psx-data.yml`) keeps the live deployment up to date without manual intervention.
-
-**Schedule:**
-- **Daily close refresh:** 17:45 PKT (12:45 UTC), with a PSX close-availability check so holidays/Eid closures are skipped automatically.
-- **Monthly repair run:** day 1 of each month (historical backfill/repair mode).
-
-**What it does:**
-1. Checks out the repository.
-2. Installs Python dependencies from `requirements.txt`.
-3. Runs `python run.py --pipeline --mode daily` for close refreshes, or `--mode repair` for monthly backfills.
-4. Stages the updated CSVs, commits, and pushes back to the repo with `[skip ci]`.
-5. The push triggers the host's automatic rebuild (Vercel or Netlify): it runs `python freeze.py` on its servers to regenerate all static HTML and JSON files from the new CSVs, and publishes the result.
-6. If there is no newly published official close (e.g. market holiday), the daily run is skipped and no commit is made.
-
-**Required repository setup:**
-
-| What | Where | Notes |
-|------|-------|-------|
-| Repository write permission | Workflow `permissions: contents: write` | Already set in the workflow file; no extra configuration needed |
-| `GITHUB_TOKEN` | Automatically injected by GitHub Actions | Used for the `git push` step |
-
-No third-party API keys are required. All data sources (PSX Data Portal, Yahoo Finance, World Bank API, FRED) are accessed via public endpoints and open-source libraries.
-
-To trigger a manual refresh, go to **Actions → Update PSX Data → Run workflow**.
+## Automation Status
+The workflow file `.github/workflows/update-psx-data.yml` is now **manual-only**. Scheduled triggers are disabled.
 
 ## Built With
-- **Python** + Flask for the backend
+- **Python** + Flask
 - **Plotly.js** for interactive charts
-- **pandas** + numpy + scipy for number crunching
-- **PSX Data Portal endpoints** + yfinance for market data
+- **pandas** + numpy + scipy for analytics
+- **PSX Data Portal endpoints** + yfinance for market data ingestion
 - **World Bank API** + FRED for macro data
-- No heavy UI frameworks
 
 ## A Few Things to Know
-- If a stock fails to fetch, the pipeline logs the error and continues with the rest.
-- Macro data has triple fallback: live API → secondary API → bundled CSV.
-- There's a 24-hour cache so re-running the pipeline doesn't hammer the APIs.
-- All dates shown in the UI reflect the actual date range of the underlying data.
-
+- This project is now maintained as a static historical analysis tool.
+- Macro series include bundled fallback CSVs where applicable.
+- All dates shown in the UI reflect the underlying dataset date range.
 
 ## License
 MIT
